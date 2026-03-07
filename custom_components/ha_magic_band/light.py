@@ -55,6 +55,7 @@ class MagicBandLight(CoordinatorEntity, LightEntity):
 
     def __init__(self, coordinator, entry: ConfigEntry) -> None:
         """Initialize the light."""
+        _LOGGER.error("DEBUG: Initializing MagicBandLight entity for %s", entry.entry_id)
         super().__init__(coordinator)
         self._entry = entry
         self._address = entry.data["address"]
@@ -134,6 +135,7 @@ class MagicBandBroadcaster(LightEntity):
 
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the broadcaster."""
+        _LOGGER.error("DEBUG: Initializing MagicBandBroadcaster entity")
         self._entry = entry
         self._attr_unique_id = "magicband_global_broadcaster"
         self._state = False

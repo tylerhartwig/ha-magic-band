@@ -1,0 +1,20 @@
+DEBUG:asyncio:Using selector: KqueueSelector
+INFO:MagicBucketSim:Initializing Virtual MagicBand+ / Popcorn Bucket (MacOS)...
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:Bluetooth powered on
+DEBUG:bless.backends.corebluetooth.server:Creating a new service with uuid: 0000fee8-0000-1000-8000-00805f9b34fb
+DEBUG:bless.backends.corebluetooth.server:Creating a new characteristic with uuid: f04eb177-3005-43a7-ac61-a390ddf83076
+DEBUG:bless.backends.corebluetooth.server:Creating a new characteristic with uuid: 2beea05b-1879-4bb4-8a2f-72641f82420b
+INFO:MagicBucketSim:Simulator is now ADVERTISING as 'MagicBucket_SIM'
+INFO:MagicBucketSim:Waiting for Home Assistant to connect...
+DEBUG:bless.backends.corebluetooth.server:Adding service: 0000fee8-0000-1000-8000-00805f9b34fb
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:Peripheral manager did add service: 0000FEE8-0000-1000-8000-00805F9B34FB
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:service added had characteristics: [<CBMutableCharacteristic: 0x60000120c230 UUID = F04EB177-3005-43A7-AC61-A390DDF83076, Value = (null), Properties = 0xC, Permissions = 0x2, Descriptors = (null), SubscribedCentrals = (
+)>, <CBMutableCharacteristic: 0x60000120c5b0 UUID = 2BEEA05B-1879-4BB4-8A2F-72641F82420B, Value = (null), Properties = 0x12, Permissions = 0x1, Descriptors = (null), SubscribedCentrals = (
+)>]
+DEBUG:bless.backends.corebluetooth.server:Advertisement Data: {'kCBAdvDataLocalName': 'MagicBucket_SIM', 'kCBAdvDataServiceUUIDs': []}
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:len_local_name: 15
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:num_uuids: 0
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:Received DidStartAdvertising Message
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:Peripheral manager did start advertising
+DEBUG:bless.backends.corebluetooth.peripheral_manager_delegate:Advertising started with the following data: {'kCBAdvDataLocalName': 'MagicBucket_SIM', 'kCBAdvDataServiceUUIDs': []}
+DEBUG:bless.backends.corebluetooth.server:Advertising...
