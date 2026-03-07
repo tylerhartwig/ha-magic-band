@@ -7,6 +7,14 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "dependencies": ["bluetooth"],
+  "bluetooth": [
+    {
+      "service_uuid": "0000fee8-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "manufacturer_id": 485
+    }
+  ],
   "requirements": ["bleak>=0.21.1"],
-  "version": "1.2.1"
+  "version": "1.2.2"
 }
