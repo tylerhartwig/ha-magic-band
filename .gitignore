@@ -1,1 +1,32 @@
-\n# Gemini CLI secrets\n.gemini/\nsettings.json
+# Secrets and Environment
+.gemini/
+.env
+
+# Integration Metadata (KEEP)
+!custom_components/*/manifest.json
+!hacs.json
+
+# Development Artifacts
+*.skill
+*.txt
+*.json
+!package.json
+!package-lock.json
+!custom_components/**/*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Logs and temporary files
+*_output.txt
+ha_logs.txt
+ha_services.json
+all_entities.txt
+
+# macOS
+.DS_Store
