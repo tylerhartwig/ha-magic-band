@@ -33,12 +33,17 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the MagicBand lights."""
+    _LOGGER.error("DEBUG: Starting light platform setup for %s", config_entry.entry_id)
     if config_entry.data.get("mode") == "broadcaster":
+        _LOGGER.error("DEBUG: Adding broadcaster entity")
         async_add_entities([MagicBandBroadcaster(config_entry)])
+        _LOGGER.error("DEBUG: Finished light platform setup for broadcaster")
         return
 
+    _LOGGER.error("DEBUG: Adding individual light entity")
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
     async_add_entities([MagicBandLight(coordinator, config_entry)])
+    _LOGGER.error("DEBUG: Finished light platform setup for connected device")
 
 
 class MagicBandLight(CoordinatorEntity, LightEntity):

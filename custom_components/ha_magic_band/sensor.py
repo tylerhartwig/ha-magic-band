@@ -1,5 +1,7 @@
 """Support for Disney MagicBand+ & Bucket sensors."""
 from __future__ import annotations
+import logging
+_LOGGER = logging.getLogger(__name__)
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -15,6 +17,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 
 
+_LOGGER.error("DEBUG: Starting sensor platform setup")
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,

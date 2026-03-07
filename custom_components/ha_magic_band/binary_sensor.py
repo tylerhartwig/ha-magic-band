@@ -1,5 +1,7 @@
 """Support for Disney MagicBand+ & Bucket binary sensors."""
 from __future__ import annotations
+import logging
+_LOGGER = logging.getLogger(__name__)
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -13,6 +15,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, ADVERTISEMENT_TIMEOUT
 import time
 
+_LOGGER.error("DEBUG: Starting binary_sensor platform setup")
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,

@@ -10,9 +10,9 @@ from bless import (
 )
 
 # Constants from Disney's MagicBand+ Protocol (Amazon Gadgets)
-SERVICE_UUID = "0000fee8-0000-1000-8000-00805f9b34fb"
+SERVICE_UUID = "fee8"
 CHAR_WRITE_UUID = "f04eb177-3005-43a7-ac61-a390ddf83076"
-CHAR_NOTIFY_UUID = "2beea05b-1879-4bb4-8a2f-72641f82420b"
+CHAR_NOTIFY_UUID = "2beea05b18794bb48a2f72641f82420b"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("MagicBucketSim")
@@ -30,14 +30,19 @@ async def run_sim():
     logger.info("Initializing Virtual MagicBand+ / Popcorn Bucket (MacOS)...")
     
     server = BlessServer(name="MagicBucket_SIM")
+    # Manually inject the service UUID into the internal advertisement data for macOS
+    if hasattr(server, "peripheral_manager_delegate"):
+        server.peripheral_manager_delegate.advertisement_data["kCBAdvDataServiceUUIDs"] = [SERVICE_UUID]
+    
     server.read_request_func = lambda char: char.value
     server.write_request_func = write_callback
 
-    # Add the Amazon Gadgets Service
     await server.add_new_service(SERVICE_UUID)
     
-    # MacOS requires writable characteristics to have NO initial value 
-    # if they are to be truly writable in CoreBluetooth.
+    # Bless on macOS needs the service UUIDs to be passed to start() 
+    # if we want them in the advertisement.
+    # However, bless 0.3.0 start() doesn't take args. 
+    # Let's try to add the characteristics first.
     await server.add_new_characteristic(
         SERVICE_UUID,
         CHAR_WRITE_UUID,
@@ -56,7 +61,7 @@ async def run_sim():
             GATTCharacteristicProperties.notify |
             GATTCharacteristicProperties.read
         ),
-        b"", # Read-only can have an initial value
+        None,
         GATTAttributePermissions.readable
     )
 
