@@ -85,7 +85,7 @@ class MagicBandLight(CoordinatorEntity, LightEntity):
         # Get the BLE device
         ble_device = async_ble_device_from_address(self.hass, self._address)
         if not ble_device:
-            _LOGGER.error("Could not find BLE device for %s", self._address)
+            _LOGGER.error("Could not find BLE device for %s. Ensure the bucket is in range and advertising.", self._address)
             return
 
         try:

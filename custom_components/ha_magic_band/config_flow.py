@@ -15,7 +15,7 @@ from homeassistant.const import CONF_ADDRESS, CONF_NAME
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN, MAGICBAND_SERVICE_UUID
+from .const import DOMAIN, MAGICBAND_SERVICE_UUID, DISNEY_MANUFACTURER_ID
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,14 +65,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current_addresses = self._async_current_ids()
         _LOGGER.error("DEBUG: Current Configured IDs: %s", current_addresses)
         _LOGGER.error("DEBUG: Target UUID: %s", MAGICBAND_SERVICE_UUID.lower())
+        _LOGGER.error("DEBUG: Target Manufacturer ID: %s", DISNEY_MANUFACTURER_ID)
         
         for discovery_info in async_discovered_service_info(self.hass):
             lowered_uuids = [u.lower() for u in discovery_info.service_uuids]
-            is_match = MAGICBAND_SERVICE_UUID.lower() in lowered_uuids
+            has_uuid = MAGICBAND_SERVICE_UUID.lower() in lowered_uuids
+            has_manuf_data = DISNEY_MANUFACTURER_ID in discovery_info.manufacturer_data
+            
+            is_match = has_uuid or has_manuf_data
             is_new = discovery_info.address not in current_addresses
             
-            _LOGGER.error("DEBUG: Eval %s (%s) - Match: %s, New: %s, UUIDs: %s", 
-                         discovery_info.address, discovery_info.name, is_match, is_new, lowered_uuids)
+            _LOGGER.error("DEBUG: Eval %s (%s) - UUID Match: %s, Manuf Match: %s, New: %s, UUIDs: %s", 
+                         discovery_info.address, discovery_info.name, has_uuid, has_manuf_data, is_new, lowered_uuids)
             
             if is_match and is_new:
                 self._discovered_devices[discovery_info.address] = discovery_info
