@@ -63,14 +63,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Scan for devices
         current_addresses = self._async_current_ids()
+        _LOGGER.error("DEBUG: Current Configured IDs: %s", current_addresses)
+        _LOGGER.error("DEBUG: Target UUID: %s", MAGICBAND_SERVICE_UUID.lower())
+        
         for discovery_info in async_discovered_service_info(self.hass):
-            _LOGGER.error("DEBUG: Discovered BLE: %s (%s) UUIDs: %s", 
-                         discovery_info.address, discovery_info.name, discovery_info.service_uuids)
-            if (
-                MAGICBAND_SERVICE_UUID.lower() in discovery_info.service_uuids
-                and discovery_info.address not in current_addresses
-            ):
+            lowered_uuids = [u.lower() for u in discovery_info.service_uuids]
+            is_match = MAGICBAND_SERVICE_UUID.lower() in lowered_uuids
+            is_new = discovery_info.address not in current_addresses
+            
+            _LOGGER.error("DEBUG: Eval %s (%s) - Match: %s, New: %s, UUIDs: %s", 
+                         discovery_info.address, discovery_info.name, is_match, is_new, lowered_uuids)
+            
+            if is_match and is_new:
                 self._discovered_devices[discovery_info.address] = discovery_info
+                _LOGGER.error("DEBUG: ADDED %s to discovery options", discovery_info.address)
 
         # Build options list
         device_options = {
