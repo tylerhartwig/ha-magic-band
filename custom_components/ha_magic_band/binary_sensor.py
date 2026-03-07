@@ -15,8 +15,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, ADVERTISEMENT_TIMEOUT
 import time
 
-_LOGGER.error("DEBUG: Starting binary_sensor platform setup")
 async def async_setup_entry(
+    _LOGGER.error("DEBUG: Starting binary_sensor platform setup")
     hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
