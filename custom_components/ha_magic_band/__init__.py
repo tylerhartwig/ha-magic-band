@@ -19,23 +19,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Disney MagicBand+ from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    if entry.data.get("mode") == "broadcaster":
-        # Global broadcaster setup logic
-        _LOGGER.info("Setting up MagicBand Broadcaster")
-        hass.data[DOMAIN][entry.entry_id] = {"mode": "broadcaster"}
-        await hass.config_entries.async_forward_entry_setups(entry, [Platform.LIGHT])
+    try:
+        if entry.data.get("mode") == "broadcaster":
+            # Global broadcaster setup logic
+            _LOGGER.info("Setting up MagicBand Broadcaster")
+            hass.data[DOMAIN][entry.entry_id] = {"mode": "broadcaster"}
+            await hass.config_entries.async_forward_entry_setups(entry, [Platform.LIGHT])
+            return True
+
+        # Connected mode setup
+        address = entry.data.get(CONF_ADDRESS)
+        _LOGGER.info("Setting up MagicBand+ at %s", address)
+
+        # Initialize the coordinator which will manage the BLE connection
+        coordinator = MagicBandCoordinator(hass, entry)
+        hass.data[DOMAIN][entry.entry_id] = coordinator
+
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         return True
-
-    # Connected mode setup
-    address = entry.data.get(CONF_ADDRESS)
-    _LOGGER.info("Setting up MagicBand+ at %s", address)
-
-    # Initialize the coordinator which will manage the BLE connection
-    coordinator = MagicBandCoordinator(hass, entry)
-    hass.data[DOMAIN][entry.entry_id] = coordinator
-
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    return True
+    except Exception as err:
+        _LOGGER.error("Error setting up MagicBand+ integration: %s", err, exc_info=True)
+        return False
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

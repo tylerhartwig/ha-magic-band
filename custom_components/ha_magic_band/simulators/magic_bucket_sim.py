@@ -1,6 +1,7 @@
-"""Standalone MagicBand+ / Popcorn Bucket BLE Simulator."""
+"""Standalone MagicBand+ / Popcorn Bucket BLE Simulator - MacOS COMPATIBLE."""
 import asyncio
 import logging
+from typing import Any
 from bless import (
     BlessServer,
     BlessGATTCharacteristic,
@@ -26,7 +27,7 @@ def write_callback(characteristic: BlessGATTCharacteristic, value: Any):
 
 async def run_sim():
     """Start the Virtual Bucket BLE server."""
-    logger.info("Initializing Virtual MagicBand+ / Popcorn Bucket...")
+    logger.info("Initializing Virtual MagicBand+ / Popcorn Bucket (MacOS)...")
     
     server = BlessServer(name="MagicBucket_SIM")
     server.read_request_func = lambda char: char.value
@@ -35,7 +36,8 @@ async def run_sim():
     # Add the Amazon Gadgets Service
     await server.add_new_service(SERVICE_UUID)
     
-    # Add the Write Characteristic
+    # MacOS requires writable characteristics to have NO initial value 
+    # if they are to be truly writable in CoreBluetooth.
     await server.add_new_characteristic(
         SERVICE_UUID,
         CHAR_WRITE_UUID,
@@ -43,11 +45,10 @@ async def run_sim():
             GATTCharacteristicProperties.write |
             GATTCharacteristicProperties.write_without_response
         ),
-        b"\x00",
-        GATTAttributePermissions.writable
+        None,
+        GATTAttributePermissions.writeable
     )
 
-    # Add the Notify Characteristic
     await server.add_new_characteristic(
         SERVICE_UUID,
         CHAR_NOTIFY_UUID,
@@ -55,17 +56,15 @@ async def run_sim():
             GATTCharacteristicProperties.notify |
             GATTCharacteristicProperties.read
         ),
-        b"\x00",
+        b"", # Read-only can have an initial value
         GATTAttributePermissions.readable
     )
 
     logger.info(f"Simulator is now ADVERTISING as '{server.name}'")
-    logger.info(f"Service: {SERVICE_UUID}")
     logger.info(f"Waiting for Home Assistant to connect...")
     
     await server.start()
     
-    # Keep the simulator running
     while True:
         await asyncio.sleep(1)
 
