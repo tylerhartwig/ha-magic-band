@@ -20,22 +20,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     try:
+        _LOGGER.error("DEBUG: Starting async_setup_entry for entry %s (mode: %s)", entry.entry_id, entry.data.get("mode"))
         if entry.data.get("mode") == "broadcaster":
             # Global broadcaster setup logic
             _LOGGER.info("Setting up MagicBand Broadcaster")
             hass.data[DOMAIN][entry.entry_id] = {"mode": "broadcaster"}
             await hass.config_entries.async_forward_entry_setups(entry, [Platform.LIGHT])
+            _LOGGER.error("DEBUG: Finished broadcaster setup for %s", entry.entry_id)
             return True
 
         # Connected mode setup
         address = entry.data.get(CONF_ADDRESS)
         _LOGGER.info("Setting up MagicBand+ at %s", address)
+        _LOGGER.error("DEBUG: Creating coordinator for %s", address)
 
         # Initialize the coordinator which will manage the BLE connection
         coordinator = MagicBandCoordinator(hass, entry)
         hass.data[DOMAIN][entry.entry_id] = coordinator
 
+        _LOGGER.error("DEBUG: Forwarding entry setups for %s", entry.entry_id)
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        _LOGGER.error("DEBUG: Successfully set up entry %s", entry.entry_id)
         return True
     except Exception as err:
         _LOGGER.error("Error setting up MagicBand+ integration: %s", err, exc_info=True)
