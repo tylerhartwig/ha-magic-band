@@ -16,8 +16,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from bleak import BleakClient
-
 from .const import DOMAIN, MAGICBAND_CHAR_WRITE_UUID
 
 _LOGGER = logging.getLogger(__name__)
@@ -82,6 +80,7 @@ class MagicBandLight(CoordinatorEntity, LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the bucket on."""
+        from bleak import BleakClient
         if ATTR_RGB_COLOR in kwargs:
             self._rgb = kwargs[ATTR_RGB_COLOR]
         if ATTR_BRIGHTNESS in kwargs:
