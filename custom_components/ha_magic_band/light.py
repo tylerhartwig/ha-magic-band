@@ -140,12 +140,23 @@ class MagicBandBroadcaster(LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Send a broadcast signal."""
-        _LOGGER.info("Sending MagicBand Broadcast signal")
+        _LOGGER.info("Sending MagicBand Broadcast signal (Glow with the Show)")
         self._state = True
-        # In broadcaster mode, we just fire the packet and stay 'on' briefly
+        
+        # Manufacturer Data for Disney (0x01E5)
+        # Payload: 01 00 00 00 ... (Trigger Ping)
+        # We will use the 'ble_advertiser' service if available or 
+        # a standard HA bluetooth broadcast.
+        
+        # Note: Broadcaster mode often requires specific ESPHome configuration.
+        # This integration will log the packet it *wants* to send.
+        packet = "0100000000000000000000000000000000000000"
+        _LOGGER.info("Broadcast Packet (Company ID 0x01E5): %s", packet)
+        
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Stop broadcasting."""
+        _LOGGER.info("Stopping MagicBand Broadcast")
         self._state = False
         self.async_write_ha_state()
