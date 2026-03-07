@@ -20,7 +20,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     try:
-        _LOGGER.error("DEBUG: Starting async_setup_entry for %s (mode: %s)", entry.entry_id, entry.data.get("mode"))
         
         if entry.data.get("mode") == "broadcaster":
             hass.data[DOMAIN][entry.entry_id] = {"mode": "broadcaster"}
@@ -31,7 +30,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.data[DOMAIN][entry.entry_id] = coordinator
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-        _LOGGER.error("DEBUG: Successfully set up entry %s", entry.entry_id)
         return True
     except Exception as err:
         _LOGGER.error("Error setting up MagicBand+ integration: %s", err, exc_info=True)
@@ -51,14 +49,11 @@ class MagicBandCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize."""
-        _LOGGER.error("DEBUG: Initializing MagicBandCoordinator for %s", entry.data.get(CONF_ADDRESS))
-        _LOGGER.error("DEBUG: Calling super().__init__")
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{entry.data.get(CONF_ADDRESS)}",
         )
-        _LOGGER.error("DEBUG: Finished super().__init__")
         self.address = entry.data.get(CONF_ADDRESS)
         self.connected = False
         self.last_seen = 0.0

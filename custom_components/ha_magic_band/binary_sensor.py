@@ -21,7 +21,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the MagicBand binary sensors."""
-    _LOGGER.error("DEBUG: Starting binary_sensor platform setup")
     if config_entry.data.get("mode") == "broadcaster":
         return
 

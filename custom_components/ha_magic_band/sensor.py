@@ -23,7 +23,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the MagicBand sensors."""
-    _LOGGER.error("DEBUG: Starting sensor platform setup")
     if config_entry.data.get("mode") == "broadcaster":
         return
 
