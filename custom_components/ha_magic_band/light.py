@@ -124,8 +124,8 @@ class MagicBandBroadcaster(LightEntity):
 
     _attr_has_entity_name = True
     _attr_name = "Broadcaster"
-    _attr_color_mode = ColorMode.ON_OFF
-    _attr_supported_color_modes = {ColorMode.ON_OFF}
+    _attr_color_mode = ColorMode.ONOFF
+    _attr_supported_color_modes = {ColorMode.ONOFF}
 
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the broadcaster."""
