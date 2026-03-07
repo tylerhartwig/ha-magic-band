@@ -95,10 +95,12 @@ class MagicBandLight(CoordinatorEntity, LightEntity):
             return
 
         try:
+            _LOGGER.error("DEBUG: Attempting connection to %s", self._address)
             async with BleakClient(ble_device) as client:
-                _LOGGER.debug("Connected to %s, sending handshake", self._address)
+                _LOGGER.error("DEBUG: Connected to %s, sending handshake", self._address)
                 # 1. Handshake (Discovery)
                 await client.write_gatt_char(MAGICBAND_CHAR_WRITE_UUID, GADGET_DISCOVER)
+                _LOGGER.error("DEBUG: Handshake sent to %s", self._address)
                 
                 # 2. Set Color
                 # Packet: FE 03 04 [Length] [Payload...]
@@ -107,8 +109,9 @@ class MagicBandLight(CoordinatorEntity, LightEntity):
                 payload = bytes([0x01, r, g, b, self._brightness])
                 packet = b"\xfe\x03\x04" + bytes([len(payload)]) + payload
                 
-                _LOGGER.info("Sending Color Packet to %s: %s", self._address, packet.hex())
+                _LOGGER.error("DEBUG: Sending Color Packet to %s: %s", self._address, packet.hex())
                 await client.write_gatt_char(MAGICBAND_CHAR_WRITE_UUID, packet)
+                _LOGGER.error("DEBUG: Color Packet sent to %s", self._address)
                 
                 self.coordinator.connected = True
         except Exception as e:
