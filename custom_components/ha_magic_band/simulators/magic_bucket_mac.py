@@ -72,6 +72,12 @@ class MagicBandPeripheral(NSObject):
             print("--- MagicBucket SIM is ADVERTISING ---")
             print("Home Assistant should discover it as 'MagicBucket_SIM'")
 
+    def peripheralManager_central_didSubscribeToCharacteristic_(self, manager, central, characteristic):
+        print(f"Central connected and subscribed: {central.identifier()}")
+
+    def peripheralManager_central_didUnsubscribeFromCharacteristic_(self, manager, central, characteristic):
+        print(f"Central unsubscribed: {central.identifier()}")
+
     def peripheralManager_didReceiveWriteRequests_(self, manager, requests):
         print(f"Received {len(requests)} write requests")
         for request in requests:
