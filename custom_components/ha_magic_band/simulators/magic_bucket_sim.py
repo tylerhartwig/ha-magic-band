@@ -8,9 +8,10 @@ from bless import (
     GATTAttributePermissions
 )
 
-# Constants from Disney's MagicBand+ Protocol
-SERVICE_UUID = "0000fee7-0000-1000-8000-00805f9b34fb"
-CHAR_UUID = "0000fee8-0000-1000-8000-00805f9b34fb"
+# Constants from Disney's MagicBand+ Protocol (Amazon Gadgets)
+SERVICE_UUID = "0000fee8-0000-1000-8000-00805f9b34fb"
+CHAR_WRITE_UUID = "f04eb177-3005-43a7-ac61-a390ddf83076"
+CHAR_NOTIFY_UUID = "2beea05b-1879-4bb4-8a2f-72641f82420b"
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("MagicBucketSim")
@@ -31,23 +32,31 @@ async def run_sim():
     server.read_request_func = lambda char: char.value
     server.write_request_func = write_callback
 
-    # Add the MagicBand+ Service
+    # Add the Amazon Gadgets Service
     await server.add_new_service(SERVICE_UUID)
     
-    # Add the Write/Notify Characteristic
+    # Add the Write Characteristic
     await server.add_new_characteristic(
         SERVICE_UUID,
-        CHAR_UUID,
+        CHAR_WRITE_UUID,
         (
             GATTCharacteristicProperties.write |
+            GATTCharacteristicProperties.write_without_response
+        ),
+        b"\x00",
+        GATTAttributePermissions.writable
+    )
+
+    # Add the Notify Characteristic
+    await server.add_new_characteristic(
+        SERVICE_UUID,
+        CHAR_NOTIFY_UUID,
+        (
             GATTCharacteristicProperties.notify |
             GATTCharacteristicProperties.read
         ),
-        b"\x00",  # Initial state
-        (
-            GATTAttributePermissions.readable |
-            GATTAttributePermissions.writable
-        )
+        b"\x00",
+        GATTAttributePermissions.readable
     )
 
     logger.info(f"Simulator is now ADVERTISING as '{server.name}'")

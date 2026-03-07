@@ -2,9 +2,10 @@
 
 DOMAIN = "ha_magic_band"
 
-# BLE Service and Characteristic UUIDs
-MAGICBAND_SERVICE_UUID = "0000fee7-0000-1000-8000-00805f9b34fb"
-MAGICBAND_CHAR_UUID = "0000fee8-0000-1000-8000-00805f9b34fb"
+# BLE Service and Characteristic UUIDs (Amazon Gadgets Protocol)
+MAGICBAND_SERVICE_UUID = "0000fee8-0000-1000-8000-00805f9b34fb"
+MAGICBAND_CHAR_WRITE_UUID = "f04eb177-3005-43a7-ac61-a390ddf83076"
+MAGICBAND_CHAR_NOTIFY_UUID = "2beea05b-1879-4bb4-8a2f-72641f82420b"
 
 # Manufacturer ID for Disney (Glow with the Show)
 DISNEY_MANUFACTURER_ID = 0x01E5

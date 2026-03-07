@@ -16,10 +16,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from bleak import BleakClient
 
-from .const import DOMAIN, MAGICBAND_CHAR_UUID
+from .const import DOMAIN, MAGICBAND_CHAR_WRITE_UUID
 
 _LOGGER = logging.getLogger(__name__)
+
+# Alexa Gadget Packet Headers
+GADGET_DISCOVER = b"\xfe\x03\x01\x00\x00"
+GADGET_STATUS = b"\xfe\x03\x03\x00\x00"
 
 
 async def async_setup_entry(
@@ -76,10 +81,35 @@ class MagicBandLight(CoordinatorEntity, LightEntity):
         if ATTR_BRIGHTNESS in kwargs:
             self._brightness = kwargs[ATTR_BRIGHTNESS]
 
-        # TODO: Implement the actual BLE write logic here
-        # We will use the characteristics from our research
-        _LOGGER.info("Turning on bucket %s with RGB %s", self._address, self._rgb)
         self._state = True
+        
+        # Get the BLE device
+        ble_device = async_ble_device_from_address(self.hass, self._address)
+        if not ble_device:
+            _LOGGER.error("Could not find BLE device for %s", self._address)
+            return
+
+        try:
+            async with BleakClient(ble_device) as client:
+                _LOGGER.debug("Connected to %s, sending handshake", self._address)
+                # 1. Handshake (Discovery)
+                await client.write_gatt_char(MAGICBAND_CHAR_WRITE_UUID, GADGET_DISCOVER)
+                
+                # 2. Set Color
+                # Packet: FE 03 04 [Length] [Payload...]
+                # Payload: 01 [R] [G] [B] [Brightness]
+                r, g, b = self._rgb
+                payload = bytes([0x01, r, g, b, self._brightness])
+                packet = b"\xfe\x03\x04" + bytes([len(payload)]) + payload
+                
+                _LOGGER.info("Sending Color Packet to %s: %s", self._address, packet.hex())
+                await client.write_gatt_char(MAGICBAND_CHAR_WRITE_UUID, packet)
+                
+                self.coordinator.connected = True
+        except Exception as e:
+            _LOGGER.error("Failed to connect to MagicBand %s: %s", self._address, e)
+            self.coordinator.connected = False
+
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:

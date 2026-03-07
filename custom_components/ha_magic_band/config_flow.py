@@ -61,6 +61,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Scan for devices if not already discovered
         current_addresses = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass):
+            # Check for the Amazon Gadgets Service UUID
             if (
                 MAGICBAND_SERVICE_UUID.lower() in discovery_info.service_uuids
                 and discovery_info.address not in current_addresses
