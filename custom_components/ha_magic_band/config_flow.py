@@ -64,6 +64,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Scan for devices
         current_addresses = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass):
+            _LOGGER.error("DEBUG: Discovered BLE: %s (%s) UUIDs: %s", 
+                         discovery_info.address, discovery_info.name, discovery_info.service_uuids)
             if (
                 MAGICBAND_SERVICE_UUID.lower() in discovery_info.service_uuids
                 and discovery_info.address not in current_addresses

@@ -9,7 +9,7 @@ from CoreBluetooth import (
 )
 from Foundation import NSObject, NSRunLoop, NSDate
 import sys
-import time
+import traceback
 
 print("--- MAGIC BUCKET MAC SIMULATOR STARTING ---")
 
@@ -23,76 +23,79 @@ class MagicBandPeripheral(NSObject):
         self = objc.super(MagicBandPeripheral, self).init()
         if self is None: return None
         print("Initializing CBPeripheralManager...")
+        # Use a strong reference to manager
         self.manager = CBPeripheralManager.alloc().initWithDelegate_queue_(self, None)
         return self
 
     def peripheralManagerDidUpdateState_(self, manager):
         state = manager.state()
-        print(f"Peripheral Manager State Updated: {state}")
+        print(f"Bluetooth State updated: {state}")
         if state == 5: # Powered On
-            print("Bluetooth Powered On. Adding Service...")
+            print("Bluetooth is ON. Setting up services...")
             self.setup_service()
         elif state == 4:
-            print("Bluetooth Powered Off.")
+            print("Bluetooth is OFF.")
         elif state == 3:
-            print("Bluetooth Unauthorized. Check system permissions.")
-        else:
-            print(f"Other state: {state}")
+            print("Bluetooth is UNAUTHORIZED.")
+        elif state == 2:
+            print("Bluetooth is UNSUPPORTED.")
 
     def setup_service(self):
-        print(f"Creating service {SERVICE_UUID}...")
-        service = CBMutableService.alloc().initWithType_primary_(SERVICE_UUID, True)
-        
-        print("Adding characteristics...")
-        char_write = CBMutableCharacteristic.alloc().initWithType_properties_value_permissions_(
-            CHAR_WRITE_UUID, 0x0C, None, 0x02 # Write | WriteWithoutResponse, Writable
-        )
-        char_notify = CBMutableCharacteristic.alloc().initWithType_properties_value_permissions_(
-            CHAR_NOTIFY_UUID, 0x12, None, 0x01 # Notify | Read, Readable
-        )
-        
-        service.setCharacteristics_([char_write, char_notify])
-        self.manager.addService_(service)
+        try:
+            print(f"Defining Service {SERVICE_UUID}...")
+            service = CBMutableService.alloc().initWithType_primary_(SERVICE_UUID, True)
+            
+            print("Defining Characteristics...")
+            char_write = CBMutableCharacteristic.alloc().initWithType_properties_value_permissions_(
+                CHAR_WRITE_UUID, 0x0C, None, 0x02 # Write | WriteWithoutResponse, Writable
+            )
+            char_notify = CBMutableCharacteristic.alloc().initWithType_properties_value_permissions_(
+                CHAR_NOTIFY_UUID, 0x12, None, 0x01 # Notify | Read, Readable
+            )
+            
+            service.setCharacteristics_([char_write, char_notify])
+            print("Adding Service to Manager...")
+            self.manager.addService_(service)
+        except Exception as e:
+            print(f"Error in setup_service: {e}")
+            traceback.print_exc()
 
     def peripheralManager_didAddService_error_(self, manager, service, error):
         if error:
             print(f"Error adding service: {error}")
         else:
-            print("Service Added. Starting Advertisement...")
+            print("Service successfully added. Starting advertisement...")
+            # Use 16-bit FEE8 for advertisement
             adv_data = {
-                CBAdvertisementDataLocalNameKey: "MB_SIM_XYZ",
-                CBAdvertisementDataServiceUUIDsKey: [SERVICE_UUID]
+                CBAdvertisementDataLocalNameKey: "MagicBucket_SIM",
+                CBAdvertisementDataServiceUUIDsKey: [CBUUID.UUIDWithString_("FEE8")]
             }
             self.manager.startAdvertising_(adv_data)
 
     def peripheralManagerDidStartAdvertising_error_(self, manager, error):
         if error:
-            print(f"Error advertising: {error}")
+            print(f"Advertisement failed: {error}")
         else:
-            print("--- MagicBucket SIM is ADVERTISING ---")
-            print("Home Assistant should discover it as 'MagicBucket_SIM'")
+            print("--- SUCCESS: MagicBucket_SIM IS NOW ADVERTISING ---")
+            print("Keep this process running.")
 
     def peripheralManager_central_didSubscribeToCharacteristic_(self, manager, central, characteristic):
-        print(f"Central connected and subscribed: {central.identifier()}")
-
-    def peripheralManager_central_didUnsubscribeFromCharacteristic_(self, manager, central, characteristic):
-        print(f"Central unsubscribed: {central.identifier()}")
+        print(f"Central {central.identifier()} subscribed to {characteristic.UUID()}")
 
     def peripheralManager_didReceiveWriteRequests_(self, manager, requests):
-        print(f"Received {len(requests)} write requests")
         for request in requests:
-            data = request.value()
-            print(f"\n[COMMAND RECEIVED] Hex: {data.hex()}")
+            print(f"Write request received: {request.value().hex()}")
             manager.respondToRequest_withResult_(request, 0)
 
 if __name__ == "__main__":
-    peripheral = MagicBandPeripheral.alloc().init()
-    print("Entering Run Loop. Press Ctrl+C to stop.")
     try:
+        peripheral = MagicBandPeripheral.alloc().init()
+        print("Entering run loop...")
+        run_loop = NSRunLoop.currentRunLoop()
         while True:
-            NSRunLoop.currentRunLoop().runMode_beforeDate_(
-                "NSDefaultRunLoopMode", 
-                NSDate.dateWithTimeIntervalSinceNow_(1.0)
-            )
-    except KeyboardInterrupt:
-        print("Stopping Simulator...")
+            run_loop.runMode_beforeDate_("NSDefaultRunLoopMode", NSDate.dateWithTimeIntervalSinceNow_(1.0))
+    except Exception as e:
+        print(f"Fatal error in main: {e}")
+        traceback.print_exc()
+    finally:
+        print("Simulator exiting.")

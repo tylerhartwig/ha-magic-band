@@ -2,15 +2,10 @@ import asyncio
 from bleak import BleakScanner, BleakClient
 
 async def run():
-    print("Searching for MagicBucket_SIM...")
-    device = await BleakScanner.find_device_by_name("MagicBucket_SIM")
-    if not device:
-        print("Could not find MagicBucket_SIM")
-        return
-    
-    print(f"Found {device.name} at {device.address}. Connecting...")
+    address = "E691E098-1DFE-8EB6-9FCA-53D54C5690F3"
+    print(f"Attempting to connect to {address}...")
     try:
-        async with BleakClient(device) as client:
+        async with BleakClient(address) as client:
             print(f"Connected: {client.is_connected}")
             services = await client.get_services()
             for s in services:
