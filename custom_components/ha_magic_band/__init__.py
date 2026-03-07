@@ -52,11 +52,13 @@ class MagicBandCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize."""
         _LOGGER.error("DEBUG: Initializing MagicBandCoordinator for %s", entry.data.get(CONF_ADDRESS))
+        _LOGGER.error("DEBUG: Calling super().__init__")
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{entry.data.get(CONF_ADDRESS)}",
         )
+        _LOGGER.error("DEBUG: Finished super().__init__")
         self.address = entry.data.get(CONF_ADDRESS)
         self.connected = False
         self.last_seen = 0.0
