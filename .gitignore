@@ -30,4 +30,7 @@ all_entities.txt
 
 # macOS
 .DS_Store
-GEMINI.md\nskills/\n
+
+# Untracked documentation and skills
+GEMINI.md
+skills/
