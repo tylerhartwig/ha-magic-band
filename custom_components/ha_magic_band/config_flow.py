@@ -35,15 +35,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
         if user_input is not None:
             # Handle broadcaster setup
-            if user_input.get(CONF_ADDRESS) == "broadcaster" or user_input.get("mode") == "broadcaster":
+            address = user_input.get(CONF_ADDRESS)
+            if address == "broadcaster":
                 await self.async_set_unique_id("global_broadcaster")
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title="MagicBand Broadcaster", data={"mode": "broadcaster"}
                 )
 
+            if address == "manual":
+                return await self.async_step_manual()
+
             # Handle device connection
-            address = user_input.get(CONF_ADDRESS)
             if address in self._discovered_devices:
                 discovery_info = self._discovered_devices[address]
                 await self.async_set_unique_id(discovery_info.address, raise_on_progress=False)
@@ -73,6 +76,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             for addr, info in self._discovered_devices.items()
         }
         device_options["broadcaster"] = "Setup Global Broadcaster Mode (No hardware needed)"
+        device_options["manual"] = "Manual Address Entry (Advanced/Debug)"
 
         return self.async_show_form(
             step_id="user",
@@ -81,6 +85,36 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_ADDRESS, default="broadcaster"): vol.In(device_options),
                 }
             ),
+        )
+
+    async def async_step_manual(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Handle manual address entry."""
+        errors = {}
+        if user_input is not None:
+            address = user_input[CONF_ADDRESS]
+            await self.async_set_unique_id(address, raise_on_progress=False)
+            self._abort_if_unique_id_configured()
+            
+            return self.async_create_entry(
+                title=user_input.get(CONF_NAME, "Manual MagicBand+"),
+                data={
+                    "mode": "connected",
+                    CONF_ADDRESS: address,
+                    CONF_NAME: user_input.get(CONF_NAME),
+                },
+            )
+
+        return self.async_show_form(
+            step_id="manual",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ADDRESS): str,
+                    vol.Optional(CONF_NAME, default="MagicBand+"): str,
+                }
+            ),
+            errors=errors,
         )
 
     async def async_step_bluetooth(

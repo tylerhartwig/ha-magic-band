@@ -60,7 +60,7 @@ class MagicBandPeripheral(NSObject):
         else:
             print("Service Added. Starting Advertisement...")
             adv_data = {
-                CBAdvertisementDataLocalNameKey: "MagicBucket_SIM",
+                CBAdvertisementDataLocalNameKey: "MB_SIM_XYZ",
                 CBAdvertisementDataServiceUUIDsKey: [SERVICE_UUID]
             }
             self.manager.startAdvertising_(adv_data)
