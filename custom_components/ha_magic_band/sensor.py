@@ -18,12 +18,12 @@ from .const import DOMAIN
 
 
 async def async_setup_entry(
-    _LOGGER.error("DEBUG: Starting sensor platform setup")
     hass: HomeAssistant,
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the MagicBand sensors."""
+    _LOGGER.error("DEBUG: Starting sensor platform setup")
     if config_entry.data.get("mode") == "broadcaster":
         return
 
