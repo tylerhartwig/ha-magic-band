@@ -75,8 +75,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             is_match = has_uuid or has_manuf_data
             is_new = discovery_info.address not in current_addresses
             
-            _LOGGER.error("DEBUG [v1.2.4]: Eval %s (%s) - UUID Match: %s, Manuf Match: %s, New: %s, UUIDs: %s, Manuf Data: %s", 
-                         discovery_info.address, discovery_info.name, has_uuid, has_manuf_data, is_new, lowered_uuids, list(discovery_info.manufacturer_data.keys()))
+            _LOGGER.error("DEBUG [v1.2.5]: Eval %s (%s) - UUID Match: %s, Manuf Match: %s, New: %s, UUIDs: %s, Manuf Data: %s, Service Data: %s", 
+                         discovery_info.address, discovery_info.name, has_uuid, has_manuf_data, is_new, lowered_uuids, list(discovery_info.manufacturer_data.keys()), list(discovery_info.service_data.keys()))
             
             if is_match and is_new:
                 self._discovered_devices[discovery_info.address] = discovery_info
