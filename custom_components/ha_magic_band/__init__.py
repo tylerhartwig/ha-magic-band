@@ -60,6 +60,7 @@ class MagicBandCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize."""
+        _LOGGER.error("DEBUG: Initializing MagicBandCoordinator for %s", entry.data.get(CONF_ADDRESS))
         super().__init__(
             hass,
             _LOGGER,
