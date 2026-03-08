@@ -45,6 +45,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if address == "manual":
                 return await self.async_step_manual()
+            
+            if address == "scan_all":
+                return await self.async_step_user({"show_all": True})
 
             # Handle device connection
             if address in self._discovered_devices:
@@ -61,34 +64,36 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        show_all = user_input.get("show_all", False) if user_input else False
+        
         # Scan for devices
         current_addresses = self._async_current_ids()
-        _LOGGER.error("DEBUG: Current Configured IDs: %s", current_addresses)
-        _LOGGER.error("DEBUG: Target UUID: %s", MAGICBAND_SERVICE_UUID.lower())
-        _LOGGER.error("DEBUG: Target Manufacturer ID: %s", DISNEY_MANUFACTURER_ID)
+        _LOGGER.error("DEBUG [v1.2.6]: Current Configured IDs: %s", current_addresses)
         
         for discovery_info in async_discovered_service_info(self.hass):
             lowered_uuids = [u.lower() for u in discovery_info.service_uuids]
             has_uuid = MAGICBAND_SERVICE_UUID.lower() in lowered_uuids
             has_manuf_data = DISNEY_MANUFACTURER_ID in discovery_info.manufacturer_data
             
-            is_match = has_uuid or has_manuf_data
+            # Match based on Disney IDs OR show everything if requested
+            is_match = has_uuid or has_manuf_data or show_all
             is_new = discovery_info.address not in current_addresses
             
-            _LOGGER.error("DEBUG [v1.2.5]: Eval %s (%s) - UUID Match: %s, Manuf Match: %s, New: %s, UUIDs: %s, Manuf Data: %s, Service Data: %s", 
-                         discovery_info.address, discovery_info.name, has_uuid, has_manuf_data, is_new, lowered_uuids, list(discovery_info.manufacturer_data.keys()), list(discovery_info.service_data.keys()))
+            _LOGGER.error("DEBUG [v1.2.6]: Eval %s (%s) - Match: %s, UUIDs: %s, Manuf: %s", 
+                         discovery_info.address, discovery_info.name, is_match, lowered_uuids, list(discovery_info.manufacturer_data.keys()))
             
             if is_match and is_new:
                 self._discovered_devices[discovery_info.address] = discovery_info
-                _LOGGER.error("DEBUG: ADDED %s to discovery options", discovery_info.address)
 
         # Build options list
         device_options = {
-            addr: f"{info.name} ({addr})"
+            addr: f"{info.name or 'Unknown'} ({addr})"
             for addr, info in self._discovered_devices.items()
         }
-        device_options["broadcaster"] = "Setup Global Broadcaster Mode (No hardware needed)"
-        device_options["manual"] = "Manual Address Entry (Advanced/Debug)"
+        device_options["broadcaster"] = "Setup Global Broadcaster Mode"
+        device_options["manual"] = "Manual Address Entry"
+        if not show_all:
+            device_options["scan_all"] = "-- SHOW ALL NEARBY DEVICES --"
 
         return self.async_show_form(
             step_id="user",
