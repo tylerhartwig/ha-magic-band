@@ -27,6 +27,15 @@ Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_des
 - Don't `match` on imported constants (bare names capture); use a dict.
 - HA access: `HA_URL`/`HA_TOKEN` in the gitignored `.env`. The Marketplace's websocket API mirrors the old
   HACS one under `marketplace/*` (e.g. `marketplace/repositories/list`).
+- Deploy: push `main` → `marketplace/repository/refresh` → `update.install` on
+  `update.disney_magicband_bucket_update` (old entity name) → `homeassistant.restart` (user-approved).
+  `/api/error_log` is 404 here; read logs from `/api/hassio/core/logs?lines=N`.
+- The toy's built-in chase (op `30`) lights the bottom LED with LL+UR (firmware timing), so "Spin"
+  steps static zone frames from HA instead. See the protocol doc's chase section.
+- Camera: the FaceTime camera has **no** exposure control on macOS, and many lit LEDs clip the hub.
+  Light one zone at a time, or use per-LED readout (LED centres from single-slot stills) on video.
+- Spin occasionally freezes ~14 s: on-air gaps from the HA→ESP link (HA reconnected to the ESP during
+  one). Not the toy, HA's loop, or ESP CPU (probed). Unresolved; suspect Wi-Fi/mesh.
 
 ## Hardware feedback loop
 - **`ble` skill** (`.claude/skills/ble/`): scan, inspect, and send handshake/color/raw packets from
