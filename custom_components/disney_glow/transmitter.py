@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
 from . import protocol
-from .const import ADV_INTERVAL_MS, AIR_TIME_MS, MIN_AIR_S
+from .const import ADV_INTERVAL_MS, AIR_TIME_MS, CALL_TIMEOUT_S, MIN_AIR_S
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,11 +72,16 @@ class Transmitter:
         data = protocol.manufacturer_data(command).hex().upper()
         if not self.available:
             raise HomeAssistantError(f"ESPHome node {self.node} has no advertise action")
-        await self.hass.services.async_call(
-            ESPHOME_DOMAIN,
-            advertise_service(self.node),
-            {"data": data, "duration_ms": AIR_TIME_MS, "interval_ms": ADV_INTERVAL_MS},
-            blocking=True,
-        )
+        try:
+            # A call can hang while HA's ESPHome connection reconnects; don't stall the queue
+            async with asyncio.timeout(CALL_TIMEOUT_S):
+                await self.hass.services.async_call(
+                    ESPHOME_DOMAIN,
+                    advertise_service(self.node),
+                    {"data": data, "duration_ms": AIR_TIME_MS, "interval_ms": ADV_INTERVAL_MS},
+                    blocking=True,
+                )
+        except TimeoutError as err:
+            raise HomeAssistantError(f"ESPHome node {self.node} did not answer") from err
         self.last_packet = data
         _LOGGER.debug("Advertised %s via %s", data, self.node)

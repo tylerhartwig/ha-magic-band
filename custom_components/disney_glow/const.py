@@ -9,6 +9,8 @@ AIR_TIME_MS = 1500
 ADV_INTERVAL_MS = 30
 # Minimum gap before the next command replaces the one on air
 MIN_AIR_S = 1.2
+# Give up on an advertise call that doesn't return (e.g. ESPHome reconnecting)
+CALL_TIMEOUT_S = 5
 
 # Spin is stepped by the integration; ~1 s per frame is the fastest that lands reliably
 SPIN_STEP_S = 1.2

@@ -6,7 +6,7 @@ drives Disney 0x0183 light toys (the Mickey ferris wheel) by BLE advertisements.
 Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_design.md`.
 
 ## Current state
-- Version **2.0.2** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
+- Version **2.0.3** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
 - Bump `version` in `manifest.json` with every user-visible change. Commit messages use
   `feat:` / `fix:` / `debug:` / `chore:` prefixes.
 
