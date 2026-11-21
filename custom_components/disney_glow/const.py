@@ -10,6 +10,9 @@ ADV_INTERVAL_MS = 30
 # Minimum gap before the next command replaces the one on air
 MIN_AIR_S = 1.2
 
+# Spin is stepped by the integration; ~1 s per frame is the fastest that lands reliably
+SPIN_STEP_S = 1.2
+
 # The toy beacons every 5-60 s from a new random address each time
 PRESENCE_TIMEOUT_S = 180
 
@@ -17,6 +20,7 @@ SIGNAL_BEACON = f"{DOMAIN}_beacon_{{}}"
 SIGNAL_SETTINGS = f"{DOMAIN}_settings_{{}}"
 
 EFFECT_IDLE = "Idle"
+EFFECT_SPIN = "Spin"
 EFFECT_CHASE = "Chase"
 EFFECT_CHASE_SLOW = "Chase (slow)"
 EFFECT_TWINKLE = "Twinkle"
@@ -26,6 +30,7 @@ EFFECT_RAINBOW = "Rainbow"
 EFFECT_RANDOM = "Random"
 EFFECT_SHOW_WHITE = "Show white"
 EFFECTS = [
+    EFFECT_SPIN,
     EFFECT_CHASE,
     EFFECT_CHASE_SLOW,
     EFFECT_TWINKLE,

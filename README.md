@@ -6,7 +6,7 @@ advertisements, so an ESP32 running ESPHome broadcasts the commands for Home Ass
 
 ## Features
 - **Light**: any RGB colour (6 bits per channel) with brightness, plus off (held dark).
-- **Effects**: Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show white, and
+- **Effects**: Spin (opposite LEDs, driven by the integration about once a second), Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show white, and
   Idle (hand control back to the toy's own animation).
 - **Settings**: secondary effect colour, duration (hold, or stop by itself after 5–45 s) and fade-out.
 - **Services**: `disney_glow.play_effect` (1–5 palette colours), `disney_glow.set_zones` (a colour

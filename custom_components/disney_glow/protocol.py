@@ -179,8 +179,23 @@ def zones(colors: list[int], t: int) -> bytes:
     return _e9([0x00, t, 0x0F, *_color_list(colors), PAD])
 
 
+def spin_frames(lit: int, background: int, t: int) -> list[bytes]:
+    """Static zone frames for a bar rotating clockwise through the opposite LED pairs.
+
+    Sent one after another by the caller. The toy's own chase (op 30) can't do this: its
+    firmware lights the bottom LED in the LL+UR step, so the bottom never pairs with the top.
+    """
+    # zone order: bottom, LL+UR, L+R, UL+LR, top
+    pairs = [(0, 4), (1,), (2,), (3,)]  # top+bottom, LL+UR, L+R, UL+LR
+    return [zones([lit if z in pair else background for z in range(5)], t) for pair in pairs]
+
+
 def chase(colors: list[int], t: int, slow: bool = False) -> bytes:
-    """Colours rotate around the zones (op 30); 7B slows it about 3x."""
+    """Colours rotate around the zones (op 30); 7B slows it about 3x.
+
+    Firmware quirk: the steps are top, UL+LR, L+R, LL+UR *with the bottom LED*, then a dark
+    step, so the bottom always shows the LL+UR colour. Use spin_frames for a symmetric spin.
+    """
     return _e9([0x00, t, 0x0F, *_color_list(colors), 0x30, *([0x7B] if slow else [])])
 
 

@@ -103,3 +103,29 @@ async def test_timed_command_expires(hass: HomeAssistant, sent, freezer) -> None
     async_fire_time_changed(hass, dt_util.utcnow())
     await hass.async_block_till_done()
     assert hass.states.get(LIGHT).state == "off"
+
+
+async def test_spin_cycles_and_stops(hass: HomeAssistant, sent, monkeypatch) -> None:
+    import asyncio
+
+    from custom_components.disney_glow import light as light_module
+
+    monkeypatch.setattr(light_module, "SPIN_STEP_S", 0.01)
+    await _setup(hass)
+    await _call(hass, "light", "turn_on", rgb_color=[255, 0, 0], effect="Spin")
+    for _ in range(50):
+        await asyncio.sleep(0.01)
+        if len(sent) >= 6:
+            break
+    # red bar over the azure secondary colour: top+bottom, LL+UR, L+R, UL+LR, then again
+    assert sent[:5] == [
+        "8301E909008E0FB5A2A2A2B5B0",
+        "8301E909008E0FA2B5A2A2A2B0",
+        "8301E909008E0FA2A2B5A2A2B0",
+        "8301E909008E0FA2A2A2B5A2B0",
+        "8301E909008E0FB5A2A2A2B5B0",
+    ]
+    await _call(hass, "light", "turn_off")
+    count = len(sent)
+    await asyncio.sleep(0.1)
+    assert sent[-1] == "8301E905008E0EFDB0" and len(sent) == count

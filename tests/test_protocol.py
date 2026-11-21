@@ -46,6 +46,16 @@ def test_golden(packet, expected):
     assert packet() == h(expected)
 
 
+def test_spin_frames():
+    # Each frame verified on camera (2026-11-21): the lit pair, rest off, opposite LEDs matching
+    assert p.spin_frames(0x15, p.OFF, 0x8E) == [
+        h("E9 09 00 8E 0F B5 BD BD BD B5 B0"),  # top + bottom
+        h("E9 09 00 8E 0F BD B5 BD BD BD B0"),  # LL + UR
+        h("E9 09 00 8E 0F BD BD B5 BD BD B0"),  # L + R
+        h("E9 09 00 8E 0F BD BD BD B5 BD B0"),  # UL + LR
+    ]
+
+
 def test_timing():
     assert p.timing(None) == 0x8E
     assert p.timing(21, p.Fade.MEDIUM) == 0x2E  # ~22 s, 0.5 s fade

@@ -1,6 +1,7 @@
 """The toy's light: solid RGB, palette effects, off and idle."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -31,8 +32,10 @@ from .const import (
     EFFECT_RANDOM,
     EFFECT_SHOW_WHITE,
     EFFECT_SPARKLE,
+    EFFECT_SPIN,
     EFFECT_TWINKLE,
     EFFECTS,
+    SPIN_STEP_S,
 )
 from .entity import GlowEntity
 
@@ -97,6 +100,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         self._attr_brightness = 255
         self._attr_effect = None
         self._expiry: CALLBACK_TYPE | None = None
+        self._spin: asyncio.Task | None = None
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -108,11 +112,10 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         self._attr_effect = last.attributes.get(ATTR_EFFECT)
         # Only a held state is still true after a restart; re-assert it in case the toy reset
         if last.state == STATE_ON and self.data.duration is None:
-            self._attr_is_on = True
-            self.data.transmitter.send(self._command(None))
+            self._apply(self._frames(None), None)
 
     async def async_will_remove_from_hass(self) -> None:
-        self._cancel_expiry()
+        self._stop()
         self.data.light = None
 
     @property
@@ -128,10 +131,10 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
             self._attr_brightness = kwargs[ATTR_BRIGHTNESS]
         if ATTR_EFFECT in kwargs:
             self._attr_effect = kwargs[ATTR_EFFECT]
-        self._apply(self._command(self.data.duration), self.data.duration)
+        self._apply(self._frames(self.data.duration), self.data.duration)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        self._cancel_expiry()
+        self._stop()
         self.data.transmitter.send(protocol.off())
         self._attr_is_on = False
         self.async_write_ha_state()
@@ -142,7 +145,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         seconds = self._seconds(duration)
         indices = [_index(c) for c in colors] if colors else self._colors()
         self._attr_effect = effect
-        self._apply(self._effect_command(effect, indices, self._timing(seconds)), seconds)
+        self._apply(self._effect_frames(effect, indices, self._timing(seconds)), seconds)
 
     async def async_set_zones(self, duration: float | None = None, **zones: str | None) -> None:
         seconds = self._seconds(duration)
@@ -151,7 +154,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         last = max(i for i, c in enumerate(given) if c)
         colors = [_index(c) if c else protocol.OFF for c in given[: last + 1]]
         self._attr_effect = None
-        self._apply(protocol.zones(colors, self._timing(seconds)), seconds)
+        self._apply([protocol.zones(colors, self._timing(seconds))], seconds)
 
     async def async_send_raw(self, data: str) -> None:
         """Advertise raw bytes (after the 83 01 company ID); state is left untouched."""
@@ -160,7 +163,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
     def release(self) -> None:
         """Hand control back to the toy's own idle cycle."""
         self._attr_effect = EFFECT_IDLE
-        self._apply(protocol.release(), None)
+        self._apply([protocol.release()], None)
 
     # -- helpers -----------------------------------------------------------------------------
 
@@ -176,17 +179,19 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
     def _colors(self) -> list[int]:
         return [protocol.nearest_color(self._attr_rgb_color), self.data.secondary_color]
 
-    def _command(self, seconds: float | None) -> bytes:
+    def _frames(self, seconds: float | None) -> list[bytes]:
+        """What to send for the current state: one command, or a cycle of frames."""
         t = self._timing(seconds)
-        if self._attr_effect == EFFECT_IDLE:
-            return protocol.release()
         if self._attr_effect:
-            return self._effect_command(self._attr_effect, self._colors(), t)
-        return protocol.rgb(*protocol.rgb_from_8bit(self._attr_rgb_color, self._attr_brightness), t)
+            return self._effect_frames(self._attr_effect, self._colors(), t)
+        return [protocol.rgb(*protocol.rgb_from_8bit(self._attr_rgb_color, self._attr_brightness), t)]
 
     @staticmethod
-    def _effect_command(effect: str, colors: list[int], t: int) -> bytes:
+    def _effect_frames(effect: str, colors: list[int], t: int) -> list[bytes]:
         first, second = colors[0], colors[1] if len(colors) > 1 else colors[0]
+        if effect == EFFECT_SPIN:
+            # One colour given: spin it over dark LEDs
+            return protocol.spin_frames(first, colors[1] if len(colors) > 1 else protocol.OFF, t)
         builders = {
             EFFECT_CHASE: lambda: protocol.chase(colors, t),
             EFFECT_CHASE_SLOW: lambda: protocol.chase(colors, t, slow=True),
@@ -200,24 +205,44 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         }
         if effect not in builders:
             raise ValueError(f"unknown effect {effect}")
-        return builders[effect]()
+        return [builders[effect]()]
 
-    def _apply(self, command: bytes, seconds: float | None) -> None:
-        self._cancel_expiry()
-        self.data.transmitter.send(command)
+    def _apply(self, frames: list[bytes], seconds: float | None) -> None:
+        self._stop()
+        if len(frames) == 1:
+            self.data.transmitter.send(frames[0])
+        else:
+            self._spin = self.entry.async_create_background_task(
+                self.hass, self._cycle(frames), f"{self.entity_id} spin"
+            )
         self._attr_is_on = True
         if seconds is not None and self._attr_effect != EFFECT_IDLE:
             # The toy stops by itself; follow it (it then idles after ~20 s dark)
             self._expiry = async_call_later(self.hass, seconds, self._expired)
         self.async_write_ha_state()
 
+    async def _cycle(self, frames: list[bytes]) -> None:
+        """Step through the frames until another command replaces them."""
+        while True:
+            for frame in frames:
+                self.data.transmitter.send(frame)
+                await asyncio.sleep(SPIN_STEP_S)
+
     @callback
     def _expired(self, _now) -> None:
         self._expiry = None
+        if self._spin:
+            # The last frame was sent with the same timing, so the toy stops by itself
+            self._spin.cancel()
+            self._spin = None
         self._attr_is_on = False
         self.async_write_ha_state()
 
-    def _cancel_expiry(self) -> None:
+    def _stop(self) -> None:
+        """Cancel a pending expiry and any running frame cycle."""
         if self._expiry:
             self._expiry()
             self._expiry = None
+        if self._spin:
+            self._spin.cancel()
+            self._spin = None

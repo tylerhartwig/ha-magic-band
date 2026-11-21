@@ -431,6 +431,24 @@ Plan: (0) automated accept/reject lab → (1) offline corpus analysis → (2) ch
   - **Usable now (encoder: `scripts/anim.py`)**: `E9 <len> 00 <T> 0F <count<<5|c1> c2 … cN 30 [7B]` = chase over N
     palette colours (count 1–5), and `… 31` = twinkle.
 
+## Chase step order and the bottom-LED quirk (2026-11-21, ~27 fps, per-LED readout)
+Single lit slot (`[red, off…]`), every list length 2–6, LEDs located from static single-slot photos:
+
+| Speed | Cycle |
+|---|---|
+| `30` (normal) | top → UL+LR → L+R → **LL+UR + bottom together** → dark → top (each ~0.24 s) |
+| `30 7B` (slow) | top → UL+LR → L+R → LL+UR → LL+UR+bottom (overlap) → bottom → dark |
+
+- The bottom LED has its own step, but the firmware starts it a fixed delay after LL+UR's. At normal
+  speed that delay covers almost the whole step, so **in a chase the bottom LED always shows the LL+UR
+  colour**, while every other opposite pair (and the static zone mapping) is correct. Modifiers from park
+  captures (`7D`, `D0 37 F4`, `D2 46 00 00 FC`) don't change this. Colour lists can't fix it.
+- Correlation over twinkle / crossfade / rainbow: only chase has the problem (rainbow's bottom~LL is just
+  neighbours on a rotating hue wave).
+- **Workaround = integration-driven spin**: static 5-zone frames top+bottom → LL+UR → L+R → UL+LR.
+  At 1.0 s per frame all frames landed in order with the bottom pairing with the top; at 0.6 s about a
+  third were dropped. `protocol.spin_frames`, "Spin" effect, 1.2 s per frame.
+
 ## Cancelling / overriding / turning off
 - **Persistent OFF**: `E9 05 00 8E 0E FD B0` (hold bit + palette 0x1D) kept the toy dark for 40+ s.
   This is the "light off" for HA. To return to the idle animation, send any short command
@@ -472,6 +490,7 @@ Plan: (0) automated accept/reject lab → (1) offline corpus analysis → (2) ch
 - The toy beacon's 14-byte body (looks encrypted/rolling).
 
 ## Log
+- 2026-11-21: chase bottom-LED quirk measured (bottom lights with LL+UR); added HA-driven Spin effect.
 - 2026-11-21: disney_glow 2.0.1 end-to-end through HA on camera: RGB (held, dimmed), chase, slow chase, twinkle,
   sparkle, crossfade, rainbow, random, zones, play_effect chase, off, timed twinkle expiring, return to idle.
   **Show white `E9 04 00 T 13 B0` verified** (pastel white with pink tints). No `0x0183` beacon in a 90 s scan

@@ -8,7 +8,7 @@ play_effect:
       required: true
       selector:
         select:
-          options: ["Chase", "Chase (slow)", "Twinkle", "Sparkle", "Crossfade", "Rainbow", "Random", "Show white"]
+          options: ["Spin", "Chase", "Chase (slow)", "Twinkle", "Sparkle", "Crossfade", "Rainbow", "Random", "Show white"]
     colors:
       selector:
         select:
