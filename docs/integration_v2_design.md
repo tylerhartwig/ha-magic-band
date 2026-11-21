@@ -1,6 +1,6 @@
 # Integration v2 design draft
 
-Status: **draft for discussion** (2026-11-21). Built on the verified findings in
+Status: **implemented as disney_glow 2.0.1** (2026-11-21), installed from the Marketplace and verified on camera. Built on the verified findings in
 `docs/ferris_wheel_protocol.md`. Items marked *unverified* need a hardware check (see §8).
 
 ## 1. What changed, and why v1 can't be patched

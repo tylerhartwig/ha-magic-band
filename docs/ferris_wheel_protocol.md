@@ -472,6 +472,10 @@ Plan: (0) automated accept/reject lab → (1) offline corpus analysis → (2) ch
 - The toy beacon's 14-byte body (looks encrypted/rolling).
 
 ## Log
+- 2026-11-21: disney_glow 2.0.1 end-to-end through HA on camera: RGB (held, dimmed), chase, slow chase, twinkle,
+  sparkle, crossfade, rainbow, random, zones, play_effect chase, off, timed twinkle expiring, return to idle.
+  **Show white `E9 04 00 T 13 B0` verified** (pastel white with pink tints). No `0x0183` beacon in a 90 s scan
+  with the wheel idle (open: when does it beacon?).
 - 2026-11-21: custom RGB is `E9 08 00 T D2 55 r g b B0` with **no** `0E` type byte (the quick-reference row had one;
   that sends `0E D2` = lime on LL+UR, seen as yellow). Verified with hold `8E` and timed `0E`: red, green, orange, blue, dim red.
 - 2026-11-21: transport moved to ESPHome on Wi-Fi (`esphome/disney-tx.yaml`, Bluetooth proxy + `disney_tx`
