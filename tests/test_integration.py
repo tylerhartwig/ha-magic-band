@@ -56,12 +56,12 @@ async def test_light(hass: HomeAssistant, sent) -> None:
     assert hass.states.get(LIGHT).state == "off"
 
     await _call(hass, "light", "turn_on", rgb_color=[255, 0, 0])
-    assert sent[-1] == "8301E908008E0ED2557E0000B0"
+    assert sent[-1] == "8301E908008ED2557E0000B0"
     state = hass.states.get(LIGHT)
     assert state.state == "on" and state.attributes["assumed_state"]
 
     await _call(hass, "light", "turn_on", brightness=128)
-    assert sent[-1] == "8301E908008E0ED2554000" "00B0"  # 32/63 red
+    assert sent[-1] == "8301E908008ED255400000B0"  # 32/63 red
 
     await _call(hass, "light", "turn_on", effect="Chase")
     assert sent[-1] == "8301E906008E0F55A230"  # red + default secondary azure, chase
@@ -93,7 +93,7 @@ async def test_timed_command_expires(hass: HomeAssistant, sent, freezer) -> None
     await _setup(hass)
     await _call(hass, "select", "select_option", entity_id="select.ferris_wheel_duration", option="5 s")
     await _call(hass, "light", "turn_on", rgb_color=[0, 0, 255])
-    assert sent[-1] == "8301E9080003" "0ED25500007EB0"
+    assert sent[-1] == "8301E9080003D25500007EB0"
     assert hass.states.get(LIGHT).state == "on"
     from pytest_homeassistant_custom_component.common import async_fire_time_changed
     import datetime as dt

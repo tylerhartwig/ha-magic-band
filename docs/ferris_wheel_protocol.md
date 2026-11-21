@@ -24,7 +24,7 @@ command         = <opcode> <len> <payload[len]>                    (TLV stream, 
     T       : bit7 hold | bit6 x2 unit | bits5-4 fade-out | bits3-0 duration (~1.5 s/unit)
     type 0E : single colour   entries = <zone<<5 | palette>        (zone 0/5/7 = all, 1/6 = LL+UR,
                                                                     2 = L+R, 3 = UL+LR, 4 = top)
-              custom RGB      entries = D2 55 <R<<1> <G<<1> <B<<1>  (D2 55 fixed)
+  D2 55 <R<<1> <G<<1> <B<<1>                                       custom RGB: its own instruction, in place of the type byte
     type 0F : multi-zone      entries = <count<<5 | c1> c2 .. c5   (count 1..5: see table)
               sparkle/flash   7 entries (c1 burst colour, c2 background, e3-e7 script)
               crossfade etc.  longer scripted bodies (see effects)
@@ -46,7 +46,7 @@ Advertise each command for **≥1 s** (30 ms interval). No connection, handshake
 | Want | Manufacturer data |
 |---|---|
 | Solid palette colour `i` (0–31) | `83 01 E9 05 00 <T> 0E <E0\|i> B0` |
-| Solid custom RGB (6-bit per channel) | `83 01 E9 08 00 <T> 0E D2 55 <r<<1> <g<<1> <b<<1> B0` |
+| Solid custom RGB (6-bit per channel) | `83 01 E9 08 00 <T> D2 55 <r<<1> <g<<1> <b<<1> B0` (no `0E`: `D2 55 r g b` is the first instruction) |
 | Turn off and stay off | `83 01 E9 05 00 8E 0E FD B0` |
 | Back to idle animation | any command with a short T (e.g. `01`); after expiry: about 20 s dark, then idle |
 | Per-zone colours (bottom, LL+UR, L+R, UL+LR, top) | `83 01 E9 09 00 <T> 0F <A0\|c1> <A0\|c2> … <A0\|c5> B0` (c1 prefix `20`/`40`/`60`/`80` = use 1/2/3/4 colours) |
@@ -472,6 +472,8 @@ Plan: (0) automated accept/reject lab → (1) offline corpus analysis → (2) ch
 - The toy beacon's 14-byte body (looks encrypted/rolling).
 
 ## Log
+- 2026-11-21: custom RGB is `E9 08 00 T D2 55 r g b B0` with **no** `0E` type byte (the quick-reference row had one;
+  that sends `0E D2` = lime on LL+UR, seen as yellow). Verified with hold `8E` and timed `0E`: red, green, orange, blue, dim red.
 - 2026-11-21: transport moved to ESPHome on Wi-Fi (`esphome/disney-tx.yaml`, Bluetooth proxy + `disney_tx`
   raw advertiser). `advertise` action → held red/green/blue/off all verified on camera with active proxy scanning on.
 - 2026-11-20: script opcodes found: 30 = chase, 31 = twinkle over c1..c5; 7B slows; anim.py encoder verified on camera

@@ -26,8 +26,9 @@ def h(s: str) -> bytes:
         (lambda: p.solid(0x15, 0x8E, p.Zone.TOP), "E9 05 00 8E 0E 95 B0"),
         (lambda: p.off(), "E9 05 00 8E 0E FD B0"),
         (lambda: p.release(), "E9 05 00 01 0E FD B0"),
-        (lambda: p.rgb(0x3F, 0, 0, 0x0E), "E9 08 00 0E 0E D2 55 7E 00 00 B0"),
-        (lambda: p.rgb(0x3F, 0x10, 0, 0x0E), "E9 08 00 0E 0E D2 55 7E 20 00 B0"),  # orange
+        (lambda: p.rgb(0x3F, 0, 0, 0x0E), "E9 08 00 0E D2 55 7E 00 00 B0"),  # red, timed
+        (lambda: p.rgb(0x3F, 0, 0, 0x8E), "E9 08 00 8E D2 55 7E 00 00 B0"),  # red, held
+        (lambda: p.rgb(0x3F, 0x10, 0, 0x8E), "E9 08 00 8E D2 55 7E 20 00 B0"),  # orange
         (lambda: p.zones([0x0F, 0x15, 0x19, 0x02, 0x07], 0x2E), "E9 09 00 2E 0F AF B5 B9 A2 A7 B0"),
         (lambda: p.chase([0x15, 0x19, 0x02, 0x11], 0x8F), "E9 08 00 8F 0F 95 B9 A2 B1 30"),
         (lambda: p.chase([0x15, 0x19, 0x02, 0x11], 0x8F, slow=True), "E9 09 00 8F 0F 95 B9 A2 B1 30 7B"),

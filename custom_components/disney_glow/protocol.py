@@ -120,12 +120,9 @@ def nearest_color(rgb: tuple[int, int, int]) -> int:
     return best.index
 
 
-def _e9(body: list[int], prefix: bytes = b"", length: int | None = None) -> bytes:
-    """E9 <len> <body>. `length` overrides the length byte (it may exclude trailing padding)."""
-    n = len(body) if length is None else length
-    if n > len(body):
-        raise ValueError("E9 length runs past the data")
-    return prefix + bytes([0xE9, n, *body])
+def _e9(body: list[int], prefix: bytes = b"") -> bytes:
+    """E9 <len> <body>."""
+    return prefix + bytes([0xE9, len(body), *body])
 
 
 def _check_color(index: int) -> int:
@@ -150,12 +147,14 @@ def release() -> bytes:
 
 
 def rgb(r: int, g: int, b: int, t: int) -> bytes:
-    """Custom colour, 6 bits per channel (0-63): E9 08 00 T 0E D2 55 r<<1 g<<1 b<<1 B0."""
+    """Custom colour, 6 bits per channel (0-63): E9 08 00 T D2 55 r<<1 g<<1 b<<1 B0.
+
+    `D2 55 r g b` is itself the first instruction, so there is no 0E type byte before it.
+    """
     for v in (r, g, b):
         if not 0 <= v <= 63:
             raise ValueError("RGB channels are 6-bit (0-63)")
-    # Verified form: the length byte excludes the trailing B0.
-    return _e9([0x00, t, 0x0E, 0xD2, 0x55, r << 1, g << 1, b << 1, PAD], length=8)
+    return _e9([0x00, t, 0xD2, 0x55, r << 1, g << 1, b << 1, PAD])
 
 
 def rgb_from_8bit(color: tuple[int, int, int], brightness: int = 255) -> tuple[int, int, int]:
