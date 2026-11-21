@@ -1,0 +1,11 @@
+#!/bin/bash
+# Compiles camera.swift on first use (or after edits) and runs it.
+set -euo pipefail
+dir="$(cd "$(dirname "$0")" && pwd)"
+bin="$dir/.build/camera"
+src="$dir/camera.swift"
+if [[ ! -x "$bin" || "$src" -nt "$bin" ]]; then
+  mkdir -p "$dir/.build"
+  swiftc -O -swift-version 5 -suppress-warnings "$src" -o "$bin" >&2
+fi
+exec "$bin" "$@"

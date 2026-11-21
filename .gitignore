@@ -1,6 +1,7 @@
 # Secrets and Environment
 .gemini/
 .env
+.claude/settings.local.json
 
 # Integration Metadata (KEEP)
 !custom_components/*/manifest.json
@@ -13,8 +14,10 @@
 !package.json
 !package-lock.json
 !custom_components/**/*.json
+!.claude/settings.json
 
 # Python
+.venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -31,6 +34,12 @@ all_entities.txt
 # macOS
 .DS_Store
 
-# Untracked documentation and skills
+# Untracked documentation and skills (Claude skills in .claude/skills/ are tracked)
 GEMINI.md
-skills/
+/skills/
+
+# Compiled skill helpers
+.claude/skills/*/scripts/.build/
+
+# HA test venv
+.venv-ha/

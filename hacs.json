@@ -1,7 +1,5 @@
 {
-  "name": "Disney MagicBand+ & Bucket",
-  "content_type": "integration",
-  "domains": ["ha_magic_band"],
-  "iot_class": "local_polling",
+  "name": "Disney Glow Toys",
+  "homeassistant": "2025.1.0",
   "render_readme": true
 }

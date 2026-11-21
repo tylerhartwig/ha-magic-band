@@ -1,0 +1,20 @@
+{
+  "domain": "disney_glow",
+  "name": "Disney Glow Toys",
+  "bluetooth": [
+    {
+      "manufacturer_id": 387,
+      "manufacturer_data_start": [241, 15, 3]
+    }
+  ],
+  "codeowners": ["@tylerhartwig"],
+  "config_flow": true,
+  "after_dependencies": ["esphome"],
+  "dependencies": ["bluetooth"],
+  "documentation": "https://github.com/tylerhartwig/ha-magic-band",
+  "integration_type": "device",
+  "iot_class": "assumed_state",
+  "issue_tracker": "https://github.com/tylerhartwig/ha-magic-band/issues",
+  "requirements": [],
+  "version": "2.0.0"
+}

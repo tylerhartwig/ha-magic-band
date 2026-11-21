@@ -1,0 +1,96 @@
+play_effect:
+  target:
+    entity:
+      integration: disney_glow
+      domain: light
+  fields:
+    effect:
+      required: true
+      selector:
+        select:
+          options: ["Chase", "Chase (slow)", "Twinkle", "Sparkle", "Crossfade", "Rainbow", "Random", "Show white"]
+    colors:
+      selector:
+        select:
+          multiple: true
+          options: &colors
+            - aqua
+            - light_sky_blue
+            - azure
+            - indigo
+            - deep_blue
+            - violet
+            - pale_lavender
+            - purple
+            - purple_magenta
+            - pink_lavender
+            - pink_violet
+            - magenta_pink
+            - magenta
+            - hot_pink
+            - crimson
+            - yellow_orange
+            - warm_white
+            - amber
+            - lime
+            - orange
+            - red_orange
+            - red
+            - cyan_blue
+            - cyan
+            - green
+            - lime_green
+            - cool_white
+            - white
+    duration:
+      selector:
+        number:
+          min: 0
+          max: 45
+          step: 0.5
+          unit_of_measurement: s
+set_zones:
+  target:
+    entity:
+      integration: disney_glow
+      domain: light
+  fields:
+    bottom:
+      required: true
+      selector:
+        select:
+          options: *colors
+    lower_left_upper_right:
+      selector:
+        select:
+          options: *colors
+    left_right:
+      selector:
+        select:
+          options: *colors
+    upper_left_lower_right:
+      selector:
+        select:
+          options: *colors
+    top:
+      selector:
+        select:
+          options: *colors
+    duration:
+      selector:
+        number:
+          min: 0
+          max: 45
+          step: 0.5
+          unit_of_measurement: s
+send_raw:
+  target:
+    entity:
+      integration: disney_glow
+      domain: light
+  fields:
+    data:
+      required: true
+      example: "E905008E0EF5B0"
+      selector:
+        text:

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Runs ble.py with the project venv (.venv at the repo root), creating it if missing.
+set -euo pipefail
+dir="$(cd "$(dirname "$0")" && pwd)"
+root="$(cd "$dir/../../../.." && pwd)"
+py="$root/.venv/bin/python"
+if [[ ! -x "$py" ]] || ! "$py" -c "import bleak" 2>/dev/null; then
+  uv venv --python 3.12 "$root/.venv" >&2
+  uv pip install --python "$py" bleak pyobjc-core pyobjc-framework-CoreBluetooth >&2
+fi
+exec "$py" "$dir/ble.py" "$@"

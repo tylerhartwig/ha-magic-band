@@ -1,0 +1,64 @@
+# ESP32-C6: Home Assistant Bluetooth proxy + Disney 0x0183 advertiser.
+# HA (or any aioesphomeapi client) calls the `advertise` action to put a packet on air.
+esphome:
+  name: disney-tx
+  friendly_name: Disney TX
+
+esp32:
+  board: esp32-c6-devkitc-1
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+logger:
+  hardware_uart: UART0   # the CP2102 USB-serial chip is on UART0
+
+api:
+  encryption:
+    key: !secret api_key
+  actions:
+    - action: advertise
+      variables:
+        data: string        # manufacturer data incl. company ID, e.g. 8301E905008E0EF5B0
+        duration_ms: int    # 0 = until stopped
+        interval_ms: int
+      then:
+        - lambda: id(tx).advertise(data, duration_ms, interval_ms);
+    - action: advertise_raw
+      variables:
+        data: string        # complete advertising payload (<= 31 bytes)
+        duration_ms: int
+        interval_ms: int
+      then:
+        - lambda: id(tx).advertise_raw(data, duration_ms, interval_ms);
+    - action: stop_advertising
+      then:
+        - lambda: id(tx).stop();
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: Disney-TX Fallback
+
+captive_portal:
+improv_serial:
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+
+bluetooth_proxy:
+  active: true
+
+disney_tx:
+  id: tx

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Runs broadcast.py with the project venv (.venv at the repo root).
+set -euo pipefail
+dir="$(cd "$(dirname "$0")" && pwd)"
+root="$(cd "$dir/../../../.." && pwd)"
+exec "$root/.venv/bin/python" "$dir/broadcast.py" "$@"
