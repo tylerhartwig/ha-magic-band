@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import timedelta
 import logging
 from typing import Any
 
@@ -20,7 +21,7 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import GlowConfigEntry, protocol
@@ -39,6 +40,7 @@ from .const import (
     EFFECT_STATIC,
     EFFECT_TWINKLE,
     EFFECTS,
+    HOLD_REFRESH_S,
     SIGNAL_COLORS,
     SIGNAL_LIGHT,
     SPIN_STEP_S,
@@ -109,6 +111,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         self._attr_effect = None
         self._expiry: CALLBACK_TYPE | None = None
         self._spin: asyncio.Task | None = None
+        self._refresh: CALLBACK_TYPE | None = None
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -146,7 +149,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         self._stop()
-        self.data.transmitter.send(protocol.off())
+        self._send_held(protocol.off())
         self._attr_is_on = False
         self.async_write_ha_state()
 
@@ -250,7 +253,10 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
     def _apply(self, frames: list[bytes], seconds: float | None) -> None:
         self._stop()
         if len(frames) == 1:
-            self.data.transmitter.send(frames[0])
+            if seconds is None and self._attr_effect != EFFECT_IDLE:
+                self._send_held(frames[0])
+            else:
+                self.data.transmitter.send(frames[0])
         else:
             self._spin = self.entry.async_create_background_task(
                 self.hass, self._cycle(frames), f"{self.entity_id} spin"
@@ -260,6 +266,13 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
             # The toy stops by itself; follow it (it then idles after ~20 s dark)
             self._expiry = async_call_later(self.hass, seconds, self._expired)
         self.async_write_ha_state()
+
+    def _send_held(self, frame: bytes) -> None:
+        """Send a held command and keep re-sending it so the toy doesn't drift back to idle."""
+        self.data.transmitter.send(frame)
+        self._refresh = async_track_time_interval(
+            self.hass, lambda _now: self.data.transmitter.send(frame), timedelta(seconds=HOLD_REFRESH_S)
+        )
 
     async def _cycle(self, frames: list[bytes]) -> None:
         """Step through the frames until another command replaces them."""
@@ -279,7 +292,10 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         self.async_write_ha_state()
 
     def _stop(self) -> None:
-        """Cancel a pending expiry and any running frame cycle."""
+        """Cancel a pending expiry, held-command refresh and any running frame cycle."""
+        if self._refresh:
+            self._refresh()
+            self._refresh = None
         if self._expiry:
             self._expiry()
             self._expiry = None

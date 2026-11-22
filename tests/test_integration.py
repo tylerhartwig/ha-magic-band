@@ -160,3 +160,30 @@ async def test_color_slots_and_effect_select(hass: HomeAssistant, sent) -> None:
     await _call(hass, "select", "select_option", entity_id=effect, option="Off")
     assert sent[-1] == "8301E905008E0EFDB0"
     assert hass.states.get(effect).state == "Off"
+
+
+async def test_held_command_is_refreshed(hass: HomeAssistant, sent, freezer) -> None:
+    import datetime as dt
+
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    async def tick(seconds):
+        freezer.tick(dt.timedelta(seconds=seconds))
+        async_fire_time_changed(hass, dt_util.utcnow())
+        await hass.async_block_till_done()
+
+    await _setup(hass)
+    await _call(hass, "light", "turn_on", rgb_color=[255, 0, 0])
+    count = len(sent)
+    await tick(31)
+    assert len(sent) == count + 1 and sent[-1] == "8301E908008ED2557E0000B0"
+
+    await _call(hass, "light", "turn_off")  # held dark is refreshed too
+    await tick(31)
+    assert sent[-2:] == ["8301E905008E0EFDB0"] * 2
+
+    await _call(hass, "button", "press", entity_id="button.ferris_wheel_return_to_idle")
+    count = len(sent)
+    await tick(31)
+    assert len(sent) == count  # idle hands control back, nothing to refresh

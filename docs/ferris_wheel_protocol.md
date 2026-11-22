@@ -186,7 +186,7 @@ Verified by lighting one slot at a time (red, the rest `1D` off) for each count,
 | `0E` | n=14 | about 22 s |
 | `2E` | n=14, bits5-4=10 | about 22 s (same length as `0E`) |
 | `4E` | n=14, bit6 | about 43 s (bit 6 roughly **doubles** the unit) |
-| `8E` | n=14, bit7 | **stays on**: still red at 46 s (bit 7 = hold/always-on) |
+| `8E` | n=14, bit7 | **stays on**: still red at 46 s (bit 7 = hold). Not forever: in use (2026-11-21) held colours drifted back to idle after a while (duration not measured), so the integration re-sends held commands every 30 s |
 
 - Low nibble `n` ≈ 1.5 s per unit (bit 6 → about 3 s per unit). After it expires the toy goes back
   to its own idle colour cycle.

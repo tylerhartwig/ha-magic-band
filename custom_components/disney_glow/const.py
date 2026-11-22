@@ -15,6 +15,10 @@ CALL_TIMEOUT_S = 5
 # Spin is stepped by the integration; ~1 s per frame is the fastest that lands reliably
 SPIN_STEP_S = 1.2
 
+# The toy drops even a held command after a while (it was only verified to ~46 s), so held
+# commands are re-sent this often
+HOLD_REFRESH_S = 30
+
 # The toy beacons every 5-60 s from a new random address each time
 PRESENCE_TIMEOUT_S = 180
 

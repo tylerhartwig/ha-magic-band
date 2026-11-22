@@ -16,5 +16,5 @@
   "iot_class": "assumed_state",
   "issue_tracker": "https://github.com/tylerhartwig/ha-magic-band/issues",
   "requirements": [],
-  "version": "2.1.0"
+  "version": "2.1.1"
 }

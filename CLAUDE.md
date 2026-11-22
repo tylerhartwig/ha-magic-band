@@ -6,7 +6,7 @@ drives Disney 0x0183 light toys (the Mickey ferris wheel) by BLE advertisements.
 Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_design.md`.
 
 ## Current state
-- Version **2.1.0** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
+- Version **2.1.1** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
 - Bump `version` in `manifest.json` with every user-visible change. Commit messages use
   `feat:` / `fix:` / `debug:` / `chore:` prefixes.
 
@@ -33,6 +33,8 @@ Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_des
   `/api/error_log` is 404 here; read logs from `/api/hassio/core/logs?lines=N`.
 - Multi-zone/chase/twinkle colour lists of fewer than 5 start at the **bottom** LED (2 colours =
   bottom c1, rest c2; 3-4 darken the top). Always send 5 via `protocol.symmetric()` (top = bottom).
+- Held (`8E`) commands don't last forever on the toy (the user saw it drift back to idle after "a
+  while"; only ~46 s was ever verified), so the light re-sends held commands every `HOLD_REFRESH_S`.
 - The toy's built-in chase (op `30`) lights the bottom LED with LL+UR (firmware timing), so "Spin"
   steps static zone frames from HA instead. See the protocol doc's chase section.
 - Camera: the FaceTime camera has **no** exposure control on macOS, and many lit LEDs clip the hub.
