@@ -29,7 +29,6 @@ from .const import (
     COLOR_EFFECTS,
     COLOR_SLOTS,
     EFFECT_CHASE,
-    EFFECT_CHASE_SLOW,
     EFFECT_CROSSFADE,
     EFFECT_IDLE,
     EFFECT_RAINBOW,
@@ -43,7 +42,9 @@ from .const import (
     HOLD_REFRESH_S,
     SIGNAL_COLORS,
     SIGNAL_LIGHT,
-    SPIN_STEP_S,
+    SIGNAL_SETTINGS,
+    SPEED_EFFECTS,
+    SPEEDS,
 )
 from .entity import GlowEntity
 
@@ -119,11 +120,15 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         self.async_on_remove(
             async_dispatcher_connect(self.hass, SIGNAL_COLORS.format(self.entry.entry_id), self._colors_changed)
         )
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_SETTINGS.format(self.entry.entry_id), self._speed_changed)
+        )
         if (last := await self.async_get_last_state()) is None:
             return
         self._attr_rgb_color = tuple(last.attributes.get(ATTR_RGB_COLOR) or self._attr_rgb_color)
         self._attr_brightness = last.attributes.get(ATTR_BRIGHTNESS) or 255
-        self._attr_effect = last.attributes.get(ATTR_EFFECT)
+        effect = last.attributes.get(ATTR_EFFECT)
+        self._attr_effect = effect if effect in EFFECTS else None  # e.g. the old "Chase (slow)"
         # Only a held state is still true after a restart; re-assert it in case the toy reset
         if last.state == STATE_ON and self.data.duration is None:
             self._apply(self._frames(None), None)
@@ -206,6 +211,11 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         if self._attr_is_on and self._attr_effect in COLOR_EFFECTS:
             self._apply(self._frames(self.data.duration), self.data.duration)
 
+    @callback
+    def _speed_changed(self) -> None:
+        if self._attr_is_on and self._attr_effect in SPEED_EFFECTS:
+            self._apply(self._frames(self.data.duration), self.data.duration)
+
     # -- helpers -----------------------------------------------------------------------------
 
     def _seconds(self, duration: float | None) -> float | None:
@@ -227,8 +237,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
             return self._effect_frames(self._attr_effect, self._colors(), t)
         return [protocol.rgb(*protocol.rgb_from_8bit(self._attr_rgb_color, self._attr_brightness), t)]
 
-    @staticmethod
-    def _effect_frames(effect: str, colors: list[int], t: int) -> list[bytes]:
+    def _effect_frames(self, effect: str, colors: list[int], t: int) -> list[bytes]:
         first, second = colors[0], colors[1] if len(colors) > 1 else colors[0]
         if effect == EFFECT_SPIN:
             return protocol.spin_frames(colors, t)
@@ -236,8 +245,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         moving = protocol.symmetric(colors if len(colors) > 1 else [first, protocol.OFF])
         builders = {
             EFFECT_STATIC: lambda: protocol.zones(protocol.symmetric(colors), t),
-            EFFECT_CHASE: lambda: protocol.chase(moving, t),
-            EFFECT_CHASE_SLOW: lambda: protocol.chase(moving, t, slow=True),
+            EFFECT_CHASE: lambda: protocol.chase(moving, t, slow=SPEEDS[self.data.speed][1]),
             EFFECT_TWINKLE: lambda: protocol.twinkle(moving, t),
             EFFECT_SPARKLE: lambda: protocol.sparkle(first, second, t),
             EFFECT_CROSSFADE: lambda: protocol.crossfade(first, second, t),
@@ -259,7 +267,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
                 self.data.transmitter.send(frames[0])
         else:
             self._spin = self.entry.async_create_background_task(
-                self.hass, self._cycle(frames), f"{self.entity_id} spin"
+                self.hass, self._cycle(frames, SPEEDS[self.data.speed][0]), f"{self.entity_id} spin"
             )
         self._attr_is_on = True
         if seconds is not None and self._attr_effect != EFFECT_IDLE:
@@ -274,12 +282,12 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
             self.hass, lambda _now: self.data.transmitter.send(frame), timedelta(seconds=HOLD_REFRESH_S)
         )
 
-    async def _cycle(self, frames: list[bytes]) -> None:
+    async def _cycle(self, frames: list[bytes], step: float) -> None:
         """Step through the frames until another command replaces them."""
         while True:
             for frame in frames:
                 self.data.transmitter.send(frame)
-                await asyncio.sleep(SPIN_STEP_S)
+                await asyncio.sleep(step)
 
     @callback
     def _expired(self, _now) -> None:

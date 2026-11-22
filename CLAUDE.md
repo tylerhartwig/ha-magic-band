@@ -6,7 +6,7 @@ drives Disney 0x0183 light toys (the Mickey ferris wheel) by BLE advertisements.
 Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_design.md`.
 
 ## Current state
-- Version **2.1.1** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
+- Version **2.2.0** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
 - Bump `version` in `manifest.json` with every user-visible change. Commit messages use
   `feat:` / `fix:` / `debug:` / `chore:` prefixes.
 
@@ -17,7 +17,7 @@ Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_des
   `MIN_AIR_S` between commands.
 - `light.py` (RGB, effects over the four `Colour N` slot lights, entity services
   `play_effect`/`set_colors`/`set_zones`/`send_raw`; assumed state, timed commands expire),
-  `select.py` (effect picker, duration, fade), `button.py` (return to idle),
+  `select.py` (effect picker, speed, duration, fade), `button.py` (return to idle),
   `binary_sensor.py` + `sensor.py` (beacon presence/RSSI via HA's bluetooth callbacks).
 - Tests: `.venv-ha/bin/python -m pytest` (Python 3.13 venv with
   `pytest-homeassistant-custom-component` plus the bluetooth integration's requirements).

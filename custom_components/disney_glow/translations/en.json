@@ -20,6 +20,9 @@
       "effect": {
         "name": "Effect"
       },
+      "speed": {
+        "name": "Speed"
+      },
       "duration": {
         "name": "Duration"
       },

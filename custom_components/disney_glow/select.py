@@ -1,15 +1,15 @@
-"""The effect picker, and settings the light uses for its next command: duration, fade."""
+"""The effect picker, and settings the light uses: speed, duration, fade."""
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import GlowConfigEntry, protocol
-from .const import DURATIONS, EFFECTS, FADES, SIGNAL_LIGHT
+from .const import DURATIONS, EFFECTS, FADES, SIGNAL_LIGHT, SIGNAL_SETTINGS, SPEEDS
 from .entity import GlowEntity
 
 OPTION_OFF = "Off"
@@ -19,7 +19,7 @@ OPTION_SOLID = "Solid colour"
 async def async_setup_entry(
     hass: HomeAssistant, entry: GlowConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([EffectSelect(entry), DurationSelect(entry), FadeSelect(entry)])
+    async_add_entities([EffectSelect(entry), SpeedSelect(entry), DurationSelect(entry), FadeSelect(entry)])
 
 
 class _SettingSelect(GlowEntity, SelectEntity, RestoreEntity):
@@ -70,6 +70,24 @@ class EffectSelect(GlowEntity, SelectEntity):
             await self.data.light.async_turn_off()
         else:
             await self.data.light.async_select_effect(None if option == OPTION_SOLID else option)
+
+
+class SpeedSelect(_SettingSelect):
+    """Spin's step time and Chase's speed; a running Spin or Chase follows it."""
+
+    _attr_translation_key = "speed"
+    _attr_options = list(SPEEDS)
+
+    def __init__(self, entry: GlowConfigEntry) -> None:
+        super().__init__(entry, "speed")
+
+    @property
+    def current_option(self) -> str:
+        return self.data.speed
+
+    def _apply(self, option: str) -> None:
+        self.data.speed = option
+        async_dispatcher_send(self.hass, SIGNAL_SETTINGS.format(self.entry.entry_id))
 
 
 class DurationSelect(_SettingSelect):

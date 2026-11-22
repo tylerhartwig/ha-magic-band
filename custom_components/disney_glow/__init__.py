@@ -32,6 +32,7 @@ class GlowData:
     colors_on: list[bool] = field(default_factory=lambda: [True] * COLOR_SLOTS)  # slot used by effects
     duration: float | None = None  # None = hold
     fade: protocol.Fade = protocol.Fade.NONE
+    speed: str = "Fast"  # a SPEEDS key
     last_seen: float | None = None  # monotonic time of the last beacon
     rssi: int | None = None
     light: object | None = field(default=None, repr=False)

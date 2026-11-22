@@ -111,7 +111,7 @@ async def test_spin_cycles_and_stops(hass: HomeAssistant, sent, monkeypatch) -> 
 
     from custom_components.disney_glow import light as light_module
 
-    monkeypatch.setattr(light_module, "SPIN_STEP_S", 0.01)
+    monkeypatch.setitem(light_module.SPEEDS, "Fast", (0.01, False))
     await _setup(hass)
     await _call(hass, DOMAIN, "set_colors", colors=["red", "azure"])
     await _call(hass, "light", "turn_on", effect="Spin")
@@ -187,3 +187,16 @@ async def test_held_command_is_refreshed(hass: HomeAssistant, sent, freezer) -> 
     count = len(sent)
     await tick(31)
     assert len(sent) == count  # idle hands control back, nothing to refresh
+
+
+async def test_speed(hass: HomeAssistant, sent) -> None:
+    await _setup(hass)
+    speed = "select.ferris_wheel_speed"
+    assert hass.states.get(speed).state == "Fast"
+    await _call(hass, "light", "turn_on", effect="Chase")
+    assert sent[-1] == "8301E909008E0FB5AFA2B9B530"
+    # A running chase follows the speed: Slow adds the toy's 7B modifier
+    await _call(hass, "select", "select_option", entity_id=speed, option="Slow")
+    assert sent[-1] == "8301E90A008E0FB5AFA2B9B5307B"
+    await _call(hass, "select", "select_option", entity_id=speed, option="Medium")
+    assert sent[-1] == "8301E909008E0FB5AFA2B9B530"

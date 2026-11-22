@@ -10,9 +10,10 @@ advertisements, so an ESP32 running ESPHome broadcasts the commands for Home Ass
   They map clockwise from the top: top + bottom, lower-left + upper-right, left + right, upper-left +
   lower-right. Switch a slot off to leave it out; the rest repeat round the wheel.
 - **Effects** (over the colour slots, picked from the light or the `Effect` select): Static, Spin
-  (opposite LEDs, driven by the integration about once a second), Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show white, and
+  (opposite LEDs, driven by the integration about once a second), Chase, Twinkle, Sparkle, Crossfade, Rainbow, Random, Show white, and
   Idle (hand control back to the toy's own animation).
-- **Settings**: duration (hold, or stop by itself after 5–45 s) and fade-out.
+- **Settings**: speed (Spin's step time and Chase's two speeds; the other effects have no known
+  speed control), duration (hold, or stop by itself after 5–45 s) and fade-out.
 - **Services**: `disney_glow.play_effect` (1–4 palette colours), `disney_glow.set_colors` (fill the
   slots), `disney_glow.set_zones` (a colour
   per LED zone) and `disney_glow.send_raw` (protocol experiments).
