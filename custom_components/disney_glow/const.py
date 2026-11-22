@@ -20,8 +20,11 @@ PRESENCE_TIMEOUT_S = 180
 
 SIGNAL_BEACON = f"{DOMAIN}_beacon_{{}}"
 SIGNAL_SETTINGS = f"{DOMAIN}_settings_{{}}"
+SIGNAL_COLORS = f"{DOMAIN}_colors_{{}}"  # colour slots changed
+SIGNAL_LIGHT = f"{DOMAIN}_light_{{}}"  # main light state written
 
 EFFECT_IDLE = "Idle"
+EFFECT_STATIC = "Static"
 EFFECT_SPIN = "Spin"
 EFFECT_CHASE = "Chase"
 EFFECT_CHASE_SLOW = "Chase (slow)"
@@ -32,6 +35,7 @@ EFFECT_RAINBOW = "Rainbow"
 EFFECT_RANDOM = "Random"
 EFFECT_SHOW_WHITE = "Show white"
 EFFECTS = [
+    EFFECT_STATIC,
     EFFECT_SPIN,
     EFFECT_CHASE,
     EFFECT_CHASE_SLOW,
@@ -43,6 +47,21 @@ EFFECTS = [
     EFFECT_SHOW_WHITE,
     EFFECT_IDLE,
 ]
+
+# Effects drawn from the colour slots (or a service's colour list)
+COLOR_EFFECTS = {
+    EFFECT_STATIC,
+    EFFECT_SPIN,
+    EFFECT_CHASE,
+    EFFECT_CHASE_SLOW,
+    EFFECT_TWINKLE,
+    EFFECT_SPARKLE,
+    EFFECT_CROSSFADE,
+}
+
+# Colour slots map to the four positions clockwise from the top: top+bottom, LL+UR, L+R, UL+LR
+COLOR_SLOTS = 4
+DEFAULT_COLORS = [0x15, 0x0F, 0x02, 0x19]  # red, yellow-orange, azure, green
 
 # select options -> seconds (None = hold until replaced)
 DURATIONS: dict[str, float | None] = {

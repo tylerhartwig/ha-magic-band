@@ -64,9 +64,10 @@ async def test_light(hass: HomeAssistant, sent) -> None:
     assert sent[-1] == "8301E908008ED255400000B0"  # 32/63 red
 
     await _call(hass, "light", "turn_on", effect="Chase")
-    assert sent[-1] == "8301E906008E0F55A230"  # red + default secondary azure, chase
+    # default slots red, yellow-orange, azure, green over all five zones (top = bottom = red)
+    assert sent[-1] == "8301E909008E0FB5AFA2B9B530"
 
-    await _call(hass, "select", "select_option", entity_id="select.ferris_wheel_secondary_colour", option="green")
+    await _call(hass, DOMAIN, "set_colors", colors=["red", "green"])
     await _call(hass, "light", "turn_on", effect="Crossfade")
     assert sent[-1] == "8301E100E911008E0F555958F4488" "2D1460208D06500B0"
 
@@ -82,7 +83,7 @@ async def test_light(hass: HomeAssistant, sent) -> None:
 async def test_services(hass: HomeAssistant, sent) -> None:
     await _setup(hass)
     await _call(hass, DOMAIN, "play_effect", effect="Twinkle", colors=["red", "white"], duration=0)
-    assert sent[-1] == "8301E906008E0F55BC31"
+    assert sent[-1] == "8301E909008E0FB5BCB5BCB531"  # red, white repeated over all five zones
     await _call(hass, DOMAIN, "set_zones", bottom="red", left_right="azure")
     assert sent[-1] == "8301E907008E0F75BDA2B0"  # 3 colours: red, (dark), azure
     await _call(hass, DOMAIN, "send_raw", data="e905002e0ef9b0")
@@ -112,12 +113,13 @@ async def test_spin_cycles_and_stops(hass: HomeAssistant, sent, monkeypatch) -> 
 
     monkeypatch.setattr(light_module, "SPIN_STEP_S", 0.01)
     await _setup(hass)
-    await _call(hass, "light", "turn_on", rgb_color=[255, 0, 0], effect="Spin")
+    await _call(hass, DOMAIN, "set_colors", colors=["red", "azure"])
+    await _call(hass, "light", "turn_on", effect="Spin")
     for _ in range(50):
         await asyncio.sleep(0.01)
         if len(sent) >= 6:
             break
-    # red bar over the azure secondary colour: top+bottom, LL+UR, L+R, UL+LR, then again
+    # red bar over azure: top+bottom, LL+UR, L+R, UL+LR, then again
     assert sent[:5] == [
         "8301E909008E0FB5A2A2A2B5B0",
         "8301E909008E0FA2B5A2A2A2B0",
@@ -129,3 +131,32 @@ async def test_spin_cycles_and_stops(hass: HomeAssistant, sent, monkeypatch) -> 
     count = len(sent)
     await asyncio.sleep(0.1)
     assert sent[-1] == "8301E905008E0EFDB0" and len(sent) == count
+
+
+async def test_color_slots_and_effect_select(hass: HomeAssistant, sent) -> None:
+    await _setup(hass)
+    effect = "select.ferris_wheel_effect"
+    assert hass.states.get(effect).state == "Off"
+    slot2 = "light.ferris_wheel_colour_2"
+    assert hass.states.get(slot2).attributes["palette_color"] == "yellow_orange"
+
+    await _call(hass, "select", "select_option", entity_id=effect, option="Static")
+    assert sent[-1] == "8301E909008E0FB5AFA2B9B5B0"
+    assert hass.states.get(LIGHT).attributes["effect"] == "Static"
+    assert hass.states.get(effect).state == "Static"
+
+    # Picking a slot colour on the wheel snaps to the palette and re-sends the running effect
+    await _call(hass, "light", "turn_on", entity_id=slot2, rgb_color=[0, 0, 250])
+    assert hass.states.get(slot2).attributes["palette_color"] == "deep_blue"
+    assert sent[-1] == "8301E909008E0FB5A4A2B9B5B0"
+
+    # Slots that are off are left out; the rest repeat round the wheel
+    await _call(hass, "light", "turn_off", entity_id="light.ferris_wheel_colour_3")
+    await _call(hass, "light", "turn_off", entity_id="light.ferris_wheel_colour_4")
+    assert sent[-1] == "8301E909008E0FB5A4B5A4B5B0"
+
+    await _call(hass, "select", "select_option", entity_id=effect, option="Solid colour")
+    assert hass.states.get(LIGHT).attributes["effect"] is None
+    await _call(hass, "select", "select_option", entity_id=effect, option="Off")
+    assert sent[-1] == "8301E905008E0EFDB0"
+    assert hass.states.get(effect).state == "Off"

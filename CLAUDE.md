@@ -6,7 +6,7 @@ drives Disney 0x0183 light toys (the Mickey ferris wheel) by BLE advertisements.
 Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_design.md`.
 
 ## Current state
-- Version **2.0.3** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
+- Version **2.1.0** on `main` (replaces the v1 GATT/`ha_magic_band` integration, now deleted).
 - Bump `version` in `manifest.json` with every user-visible change. Commit messages use
   `feat:` / `fix:` / `debug:` / `chore:` prefixes.
 
@@ -15,8 +15,9 @@ Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_des
   copied from `docs/ferris_wheel_protocol.md`. Any new builder needs a camera-verified golden.
 - `transmitter.py`: calls the ESPHome action; one command on air at a time, latest pending wins,
   `MIN_AIR_S` between commands.
-- `light.py` (RGB, effects, entity services `play_effect`/`set_zones`/`send_raw`; assumed state, timed
-  commands expire), `select.py` (secondary colour/duration/fade), `button.py` (return to idle),
+- `light.py` (RGB, effects over the four `Colour N` slot lights, entity services
+  `play_effect`/`set_colors`/`set_zones`/`send_raw`; assumed state, timed commands expire),
+  `select.py` (effect picker, duration, fade), `button.py` (return to idle),
   `binary_sensor.py` + `sensor.py` (beacon presence/RSSI via HA's bluetooth callbacks).
 - Tests: `.venv-ha/bin/python -m pytest` (Python 3.13 venv with
   `pytest-homeassistant-custom-component` plus the bluetooth integration's requirements).
@@ -30,6 +31,8 @@ Code lives in `custom_components/disney_glow/`. Design: `docs/integration_v2_des
 - Deploy: push `main` → `marketplace/repository/refresh` → `update.install` on
   `update.disney_magicband_bucket_update` (old entity name) → `homeassistant.restart` (user-approved).
   `/api/error_log` is 404 here; read logs from `/api/hassio/core/logs?lines=N`.
+- Multi-zone/chase/twinkle colour lists of fewer than 5 start at the **bottom** LED (2 colours =
+  bottom c1, rest c2; 3-4 darken the top). Always send 5 via `protocol.symmetric()` (top = bottom).
 - The toy's built-in chase (op `30`) lights the bottom LED with LL+UR (firmware timing), so "Spin"
   steps static zone frames from HA instead. See the protocol doc's chase section.
 - Camera: the FaceTime camera has **no** exposure control on macOS, and many lit LEDs clip the hub.

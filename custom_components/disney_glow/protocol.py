@@ -179,15 +179,32 @@ def zones(colors: list[int], t: int) -> bytes:
     return _e9([0x00, t, 0x0F, *_color_list(colors), PAD])
 
 
-def spin_frames(lit: int, background: int, t: int) -> list[bytes]:
-    """Static zone frames for a bar rotating clockwise through the opposite LED pairs.
+def symmetric(colors: list[int]) -> list[int]:
+    """Five zone colours from 1-4 position colours, with the top and bottom LEDs matching.
 
-    Sent one after another by the caller. The toy's own chase (op 30) can't do this: its
-    firmware lights the bottom LED in the LL+UR step, so the bottom never pairs with the top.
+    Positions run clockwise from the top: top+bottom, LL+UR, L+R, UL+LR; the colours repeat to fill
+    them. Always send all five zones: with fewer the toy starts at the bottom and darkens the top.
     """
-    # zone order: bottom, LL+UR, L+R, UL+LR, top
-    pairs = [(0, 4), (1,), (2,), (3,)]  # top+bottom, LL+UR, L+R, UL+LR
-    return [zones([lit if z in pair else background for z in range(5)], t) for pair in pairs]
+    if not 1 <= len(colors) <= 4:
+        raise ValueError("1-4 colours")
+    top, *ring = [colors[i % len(colors)] for i in range(4)]
+    return [top, *ring, top]
+
+
+def spin_frames(colors: list[int], t: int) -> list[bytes]:
+    """Static zone frames that rotate a pattern clockwise through the four positions.
+
+    One colour spins over dark LEDs, two spin a c1 bar over a c2 background, three or four rotate as
+    given (three leaves one position dark). Sent one after another by the caller. The toy's own
+    chase (op 30) can't do this: its firmware lights the bottom LED in the LL+UR step.
+    """
+    if not 1 <= len(colors) <= 4:
+        raise ValueError("1-4 colours")
+    if len(colors) <= 2:
+        pattern = [colors[0], *[colors[-1] if len(colors) == 2 else OFF] * 3]
+    else:
+        pattern = [*colors, OFF][:4]
+    return [zones(symmetric([pattern[(j - k) % 4] for j in range(4)]), t) for k in range(4)]
 
 
 def chase(colors: list[int], t: int, slow: bool = False) -> bytes:

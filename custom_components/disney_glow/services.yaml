@@ -8,7 +8,7 @@ play_effect:
       required: true
       selector:
         select:
-          options: ["Spin", "Chase", "Chase (slow)", "Twinkle", "Sparkle", "Crossfade", "Rainbow", "Random", "Show white"]
+          options: ["Static", "Spin", "Chase", "Chase (slow)", "Twinkle", "Sparkle", "Crossfade", "Rainbow", "Random", "Show white"]
     colors:
       selector:
         select:
@@ -83,6 +83,18 @@ set_zones:
           max: 45
           step: 0.5
           unit_of_measurement: s
+set_colors:
+  target:
+    entity:
+      integration: disney_glow
+      domain: light
+  fields:
+    colors:
+      required: true
+      selector:
+        select:
+          multiple: true
+          options: *colors
 send_raw:
   target:
     entity:

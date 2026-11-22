@@ -48,12 +48,30 @@ def test_golden(packet, expected):
 
 def test_spin_frames():
     # Each frame verified on camera (2026-11-21): the lit pair, rest off, opposite LEDs matching
-    assert p.spin_frames(0x15, p.OFF, 0x8E) == [
+    assert p.spin_frames([0x15], 0x8E) == [
         h("E9 09 00 8E 0F B5 BD BD BD B5 B0"),  # top + bottom
         h("E9 09 00 8E 0F BD B5 BD BD BD B0"),  # LL + UR
         h("E9 09 00 8E 0F BD BD B5 BD BD B0"),  # L + R
         h("E9 09 00 8E 0F BD BD BD B5 BD B0"),  # UL + LR
     ]
+
+
+def test_spin_frames_patterns():
+    # c1 bar over a c2 background, starting at top+bottom
+    assert p.spin_frames([0x15, 0x02], 0x8E)[1] == p.zones([0x02, 0x15, 0x02, 0x02, 0x02], 0x8E)
+    # four colours rotate one position per frame; top and bottom always match
+    frames = p.spin_frames([1, 2, 3, 4], 0x8E)
+    assert frames[0] == p.zones([1, 2, 3, 4, 1], 0x8E)
+    assert frames[1] == p.zones([4, 1, 2, 3, 4], 0x8E)
+
+
+def test_symmetric():
+    assert p.symmetric([0x15]) == [0x15] * 5
+    assert p.symmetric([1, 2]) == [1, 2, 1, 2, 1]
+    assert p.symmetric([1, 2, 3]) == [1, 2, 3, 1, 1]
+    assert p.symmetric([1, 2, 3, 4]) == [1, 2, 3, 4, 1]
+    with pytest.raises(ValueError):
+        p.symmetric([1, 2, 3, 4, 5])
 
 
 def test_timing():

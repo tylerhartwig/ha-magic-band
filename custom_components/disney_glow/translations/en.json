@@ -17,18 +17,35 @@
   },
   "entity": {
     "select": {
-      "secondary_color": { "name": "Secondary colour" },
-      "duration": { "name": "Duration" },
-      "fade": { "name": "Fade out" }
+      "effect": {
+        "name": "Effect"
+      },
+      "duration": {
+        "name": "Duration"
+      },
+      "fade": {
+        "name": "Fade out"
+      }
     },
     "button": {
-      "return_to_idle": { "name": "Return to idle" }
+      "return_to_idle": {
+        "name": "Return to idle"
+      }
     },
     "binary_sensor": {
-      "nearby": { "name": "Nearby" }
+      "nearby": {
+        "name": "Nearby"
+      }
     },
     "sensor": {
-      "beacon_rssi": { "name": "Beacon signal" }
+      "beacon_rssi": {
+        "name": "Beacon signal"
+      }
+    },
+    "light": {
+      "color_slot": {
+        "name": "Colour {number}"
+      }
     }
   },
   "services": {
@@ -36,28 +53,68 @@
       "name": "Play effect",
       "description": "Play an effect with up to five palette colours.",
       "fields": {
-        "effect": { "name": "Effect", "description": "Effect to play." },
-        "colors": { "name": "Colours", "description": "1-5 palette colours (defaults to the light colour and the secondary colour)." },
-        "duration": { "name": "Duration", "description": "Seconds before the toy stops by itself; 0 holds. Defaults to the Duration setting." }
+        "effect": {
+          "name": "Effect",
+          "description": "Effect to play."
+        },
+        "colors": {
+          "name": "Colours",
+          "description": "1-4 palette colours (defaults to the colour slots that are on)."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Seconds before the toy stops by itself; 0 holds. Defaults to the Duration setting."
+        }
+      }
+    },
+    "set_colors": {
+      "name": "Set colours",
+      "description": "Fill the colour slots that effects use, clockwise from the top: top + bottom, lower-left + upper-right, left + right, upper-left + lower-right. A running effect switches to them.",
+      "fields": {
+        "colors": {
+          "name": "Colours",
+          "description": "1-4 palette colours; slots past the last one are switched off."
+        }
       }
     },
     "set_zones": {
       "name": "Set zones",
       "description": "Light each of the five LED zones in its own palette colour.",
       "fields": {
-        "bottom": { "name": "Bottom", "description": "Bottom LED." },
-        "lower_left_upper_right": { "name": "Lower-left + upper-right", "description": "Diagonal pair." },
-        "left_right": { "name": "Left + right", "description": "Side pair." },
-        "upper_left_lower_right": { "name": "Upper-left + lower-right", "description": "Other diagonal pair." },
-        "top": { "name": "Top", "description": "Top LED." },
-        "duration": { "name": "Duration", "description": "Seconds before the toy stops by itself; 0 holds." }
+        "bottom": {
+          "name": "Bottom",
+          "description": "Bottom LED."
+        },
+        "lower_left_upper_right": {
+          "name": "Lower-left + upper-right",
+          "description": "Diagonal pair."
+        },
+        "left_right": {
+          "name": "Left + right",
+          "description": "Side pair."
+        },
+        "upper_left_lower_right": {
+          "name": "Upper-left + lower-right",
+          "description": "Other diagonal pair."
+        },
+        "top": {
+          "name": "Top",
+          "description": "Top LED."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Seconds before the toy stops by itself; 0 holds."
+        }
       }
     },
     "send_raw": {
       "name": "Send raw packet",
       "description": "Advertise raw command bytes (after the 83 01 company ID) for protocol experiments.",
       "fields": {
-        "data": { "name": "Data", "description": "Hex bytes, e.g. E905008E0EF5B0." }
+        "data": {
+          "name": "Data",
+          "description": "Hex bytes, e.g. E905008E0EF5B0."
+        }
       }
     }
   }

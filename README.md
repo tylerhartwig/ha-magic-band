@@ -6,10 +6,15 @@ advertisements, so an ESP32 running ESPHome broadcasts the commands for Home Ass
 
 ## Features
 - **Light**: any RGB colour (6 bits per channel) with brightness, plus off (held dark).
-- **Effects**: Spin (opposite LEDs, driven by the integration about once a second), Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show white, and
+- **Colour slots**: `Colour 1`–`Colour 4` lights with a colour wheel (snapped to the toy's palette).
+  They map clockwise from the top: top + bottom, lower-left + upper-right, left + right, upper-left +
+  lower-right. Switch a slot off to leave it out; the rest repeat round the wheel.
+- **Effects** (over the colour slots, picked from the light or the `Effect` select): Static, Spin
+  (opposite LEDs, driven by the integration about once a second), Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show white, and
   Idle (hand control back to the toy's own animation).
-- **Settings**: secondary effect colour, duration (hold, or stop by itself after 5–45 s) and fade-out.
-- **Services**: `disney_glow.play_effect` (1–5 palette colours), `disney_glow.set_zones` (a colour
+- **Settings**: duration (hold, or stop by itself after 5–45 s) and fade-out.
+- **Services**: `disney_glow.play_effect` (1–4 palette colours), `disney_glow.set_colors` (fill the
+  slots), `disney_glow.set_zones` (a colour
   per LED zone) and `disney_glow.send_raw` (protocol experiments).
 - **Presence**: "Nearby" and beacon signal strength from the toy's own beacon, heard through any
   Bluetooth adapter or proxy.

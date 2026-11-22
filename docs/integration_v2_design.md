@@ -109,9 +109,9 @@ parser.
 
 | Entity | Behaviour |
 |---|---|
-| `light.<toy>` | Main light. `ColorMode.RGB` + brightness (6-bit custom RGB, brightness scales the channels). `off` = held palette `1D`. **Effects**: Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show White, *Idle* (release). Effects use the current colour plus the "secondary colour" select. `assumed_state = True`. |
+| `light.<toy>` | Main light. `ColorMode.RGB` + brightness (6-bit custom RGB, brightness scales the channels). `off` = held palette `1D`. **Effects**: Chase, Chase (slow), Twinkle, Sparkle, Crossfade, Rainbow, Random, Show White, *Idle* (release). Effects use the colour slots (2.1.0; was a "secondary colour" select). `assumed_state = True`. |
 | `light.<toy>_<zone>` ×5 (optional, disabled by default) | Bottom, LL+UR, L+R, UL+LR, top. Changes are merged into **one** 5-zone `0F` packet. Colours snap to the nearest palette entry (multi-zone only takes palette indices, *unless §8 shows RGB works there*). |
-| `select.<toy>_secondary_colour` | Palette colour used as c2 for sparkle/crossfade/twinkle. |
+| `light.<toy>_colour_1..4` | Colour slots (2.1.0): palette colours for effects, top+bottom / LL+UR / L+R / UL+LR. `select.<toy>_effect` plays an effect over them. |
 | `select.<toy>_duration` | Hold (default), 5 s, 10 s, 20 s, 45 s. Applies to the next command. |
 | `select.<toy>_fade_out` | None / short / medium / long (timing bits 5–4). |
 | `button.<toy>_return_to_idle` | Sends a short command so the toy drops back to its own idle cycle. |

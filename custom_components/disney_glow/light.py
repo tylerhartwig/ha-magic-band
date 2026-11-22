@@ -1,4 +1,4 @@
-"""The toy's light: solid RGB, palette effects, off and idle."""
+"""The toy's light (solid RGB, effects over the colour slots, off, idle) and the colour slots."""
 from __future__ import annotations
 
 import asyncio
@@ -15,15 +15,18 @@ from homeassistant.components.light import (
     LightEntity,
     LightEntityFeature,
 )
-from homeassistant.const import STATE_ON
+from homeassistant.const import STATE_ON, EntityCategory
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import GlowConfigEntry, protocol
 from .const import (
+    COLOR_EFFECTS,
+    COLOR_SLOTS,
     EFFECT_CHASE,
     EFFECT_CHASE_SLOW,
     EFFECT_CROSSFADE,
@@ -33,8 +36,11 @@ from .const import (
     EFFECT_SHOW_WHITE,
     EFFECT_SPARKLE,
     EFFECT_SPIN,
+    EFFECT_STATIC,
     EFFECT_TWINKLE,
     EFFECTS,
+    SIGNAL_COLORS,
+    SIGNAL_LIGHT,
     SPIN_STEP_S,
 )
 from .entity import GlowEntity
@@ -44,21 +50,18 @@ _LOGGER = logging.getLogger(__name__)
 COLOR_NAMES = [c.name for c in protocol.SOLID_COLORS]
 ZONE_FIELDS = ["bottom", "lower_left_upper_right", "left_right", "upper_left_lower_right", "top"]
 
-# Effects drawn from a colour list (the light's colour first, then the secondary colour)
-LIST_EFFECTS = {EFFECT_CHASE, EFFECT_CHASE_SLOW, EFFECT_TWINKLE, EFFECT_SPARKLE, EFFECT_CROSSFADE}
-
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: GlowConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([GlowLight(entry)])
+    async_add_entities([GlowLight(entry), *(ColorSlot(entry, slot) for slot in range(COLOR_SLOTS))])
 
     platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         "play_effect",
         {
             vol.Required("effect"): vol.In([e for e in EFFECTS if e != EFFECT_IDLE]),
-            vol.Optional("colors"): vol.All(cv.ensure_list, [vol.In(COLOR_NAMES)], vol.Length(min=1, max=5)),
+            vol.Optional("colors"): vol.All(cv.ensure_list, [vol.In(COLOR_NAMES)], vol.Length(min=1, max=COLOR_SLOTS)),
             vol.Optional("duration"): vol.All(vol.Coerce(float), vol.Range(min=0, max=45)),
         },
         "async_play_effect",
@@ -71,6 +74,11 @@ async def async_setup_entry(
             vol.Optional("duration"): vol.All(vol.Coerce(float), vol.Range(min=0, max=45)),
         },
         "async_set_zones",
+    )
+    platform.async_register_entity_service(
+        "set_colors",
+        {vol.Required("colors"): vol.All(cv.ensure_list, [vol.In(COLOR_NAMES)], vol.Length(min=1, max=COLOR_SLOTS))},
+        "async_set_colors",
     )
     platform.async_register_entity_service(
         "send_raw",
@@ -105,6 +113,9 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self.data.light = self
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_COLORS.format(self.entry.entry_id), self._colors_changed)
+        )
         if (last := await self.async_get_last_state()) is None:
             return
         self._attr_rgb_color = tuple(last.attributes.get(ATTR_RGB_COLOR) or self._attr_rgb_color)
@@ -156,6 +167,22 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         self._attr_effect = None
         self._apply([protocol.zones(colors, self._timing(seconds))], seconds)
 
+    async def async_set_colors(self, colors: list[str]) -> None:
+        """Fill the colour slots in order (the rest are switched off); a running effect follows."""
+        for slot in range(COLOR_SLOTS):
+            if slot < len(colors):
+                self.data.colors[slot] = _index(colors[slot])
+            self.data.colors_on[slot] = slot < len(colors)
+        async_dispatcher_send(self.hass, SIGNAL_COLORS.format(self.entry.entry_id))
+
+    async def async_select_effect(self, effect: str | None) -> None:
+        """Play an effect over the colour slots (None = solid light colour)."""
+        if effect == EFFECT_IDLE:
+            self.release()
+            return
+        self._attr_effect = effect
+        self._apply(self._frames(self.data.duration), self.data.duration)
+
     async def async_send_raw(self, data: str) -> None:
         """Advertise raw bytes (after the 83 01 company ID); state is left untouched."""
         await self.data.transmitter.async_send_now(bytes.fromhex(data))
@@ -164,6 +191,17 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         """Hand control back to the toy's own idle cycle."""
         self._attr_effect = EFFECT_IDLE
         self._apply([protocol.release()], None)
+
+    @callback
+    def async_write_ha_state(self) -> None:
+        super().async_write_ha_state()
+        async_dispatcher_send(self.hass, SIGNAL_LIGHT.format(self.entry.entry_id))
+
+    @callback
+    def _colors_changed(self) -> None:
+        """Re-send a running slot-colour effect so the toy shows the new colours."""
+        if self._attr_is_on and self._attr_effect in COLOR_EFFECTS:
+            self._apply(self._frames(self.data.duration), self.data.duration)
 
     # -- helpers -----------------------------------------------------------------------------
 
@@ -177,7 +215,7 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         return protocol.timing(seconds, self.data.fade)
 
     def _colors(self) -> list[int]:
-        return [protocol.nearest_color(self._attr_rgb_color), self.data.secondary_color]
+        return self.data.active_colors() or [protocol.nearest_color(self._attr_rgb_color)]
 
     def _frames(self, seconds: float | None) -> list[bytes]:
         """What to send for the current state: one command, or a cycle of frames."""
@@ -190,12 +228,14 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
     def _effect_frames(effect: str, colors: list[int], t: int) -> list[bytes]:
         first, second = colors[0], colors[1] if len(colors) > 1 else colors[0]
         if effect == EFFECT_SPIN:
-            # One colour given: spin it over dark LEDs
-            return protocol.spin_frames(first, colors[1] if len(colors) > 1 else protocol.OFF, t)
+            return protocol.spin_frames(colors, t)
+        # Always all five zones (top and bottom matching); a lone colour moves over dark LEDs
+        moving = protocol.symmetric(colors if len(colors) > 1 else [first, protocol.OFF])
         builders = {
-            EFFECT_CHASE: lambda: protocol.chase(colors, t),
-            EFFECT_CHASE_SLOW: lambda: protocol.chase(colors, t, slow=True),
-            EFFECT_TWINKLE: lambda: protocol.twinkle(colors, t),
+            EFFECT_STATIC: lambda: protocol.zones(protocol.symmetric(colors), t),
+            EFFECT_CHASE: lambda: protocol.chase(moving, t),
+            EFFECT_CHASE_SLOW: lambda: protocol.chase(moving, t, slow=True),
+            EFFECT_TWINKLE: lambda: protocol.twinkle(moving, t),
             EFFECT_SPARKLE: lambda: protocol.sparkle(first, second, t),
             EFFECT_CROSSFADE: lambda: protocol.crossfade(first, second, t),
             EFFECT_RAINBOW: lambda: protocol.rainbow(t),
@@ -246,3 +286,64 @@ class GlowLight(GlowEntity, LightEntity, RestoreEntity):
         if self._spin:
             self._spin.cancel()
             self._spin = None
+
+
+class ColorSlot(GlowEntity, LightEntity, RestoreEntity):
+    """One of the colours effects use: pick it on the colour wheel, switch it off to leave it out.
+
+    The toy's effects take palette colours, so the picked colour snaps to the nearest one and the
+    entity shows that snapped colour.
+    """
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_translation_key = "color_slot"
+    _attr_color_mode = ColorMode.RGB
+    _attr_supported_color_modes = {ColorMode.RGB}
+    _attr_brightness = 255
+
+    def __init__(self, entry: GlowConfigEntry, slot: int) -> None:
+        super().__init__(entry, f"color_{slot + 1}")
+        self._slot = slot
+        self._attr_translation_placeholders = {"number": str(slot + 1)}
+
+    @property
+    def _color(self) -> protocol.PaletteColor:
+        return protocol.PALETTE[self.data.colors[self._slot]]
+
+    @property
+    def is_on(self) -> bool:
+        return self.data.colors_on[self._slot]
+
+    @property
+    def rgb_color(self) -> tuple[int, int, int]:
+        return self._color.rgb
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"palette_color": self._color.name}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_COLORS.format(self.entry.entry_id), self.async_write_ha_state
+            )
+        )
+        last = await self.async_get_last_state()
+        if last and (name := last.attributes.get("palette_color")) in protocol.COLOR_BY_NAME:
+            self.data.colors[self._slot] = protocol.COLOR_BY_NAME[name].index
+            self.data.colors_on[self._slot] = last.state == STATE_ON
+            self._changed()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        if ATTR_RGB_COLOR in kwargs:
+            self.data.colors[self._slot] = protocol.nearest_color(kwargs[ATTR_RGB_COLOR])
+        self.data.colors_on[self._slot] = True
+        self._changed()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self.data.colors_on[self._slot] = False
+        self._changed()
+
+    def _changed(self) -> None:
+        async_dispatcher_send(self.hass, SIGNAL_COLORS.format(self.entry.entry_id))

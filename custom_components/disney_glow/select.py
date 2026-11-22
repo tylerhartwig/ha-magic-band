@@ -1,23 +1,25 @@
-"""Settings the light uses for its next command: secondary colour, duration, fade."""
+"""The effect picker, and settings the light uses for its next command: duration, fade."""
 from __future__ import annotations
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import GlowConfigEntry, protocol
-from .const import DURATIONS, FADES
+from .const import DURATIONS, EFFECTS, FADES, SIGNAL_LIGHT
 from .entity import GlowEntity
 
-COLOR_NAMES = [c.name for c in protocol.SOLID_COLORS]
+OPTION_OFF = "Off"
+OPTION_SOLID = "Solid colour"
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: GlowConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    async_add_entities([SecondaryColorSelect(entry), DurationSelect(entry), FadeSelect(entry)])
+    async_add_entities([EffectSelect(entry), DurationSelect(entry), FadeSelect(entry)])
 
 
 class _SettingSelect(GlowEntity, SelectEntity, RestoreEntity):
@@ -37,19 +39,37 @@ class _SettingSelect(GlowEntity, SelectEntity, RestoreEntity):
         raise NotImplementedError
 
 
-class SecondaryColorSelect(_SettingSelect):
-    _attr_translation_key = "secondary_color"
-    _attr_options = COLOR_NAMES
+class EffectSelect(GlowEntity, SelectEntity):
+    """What the wheel is doing; picking an option plays it over the colour slots."""
+
+    _attr_translation_key = "effect"
+    _attr_options = [OPTION_OFF, OPTION_SOLID, *EFFECTS]
 
     def __init__(self, entry: GlowConfigEntry) -> None:
-        super().__init__(entry, "secondary_color")
+        super().__init__(entry, "effect")
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_LIGHT.format(self.entry.entry_id), self.async_write_ha_state)
+        )
 
     @property
-    def current_option(self) -> str:
-        return protocol.PALETTE[self.data.secondary_color].name
+    def available(self) -> bool:
+        return self.data.light is not None and self.data.light.available
 
-    def _apply(self, option: str) -> None:
-        self.data.secondary_color = protocol.COLOR_BY_NAME[option].index
+    @property
+    def current_option(self) -> str | None:
+        light = self.data.light
+        if light is None or not light.is_on:
+            return OPTION_OFF
+        return light.effect or OPTION_SOLID
+
+    async def async_select_option(self, option: str) -> None:
+        if option == OPTION_OFF:
+            await self.data.light.async_turn_off()
+        else:
+            await self.data.light.async_select_effect(None if option == OPTION_SOLID else option)
 
 
 class DurationSelect(_SettingSelect):

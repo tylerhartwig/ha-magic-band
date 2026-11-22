@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from . import protocol
-from .const import CONF_TRANSMITTER, DOMAIN, SIGNAL_BEACON
+from .const import COLOR_SLOTS, CONF_TRANSMITTER, DEFAULT_COLORS, DOMAIN, SIGNAL_BEACON
 from .transmitter import Transmitter
 
 PLATFORMS: list[Platform] = [
@@ -28,12 +28,16 @@ class GlowData:
     """Shared state for one toy."""
 
     transmitter: Transmitter
-    secondary_color: int = 0x02  # azure
+    colors: list[int] = field(default_factory=lambda: list(DEFAULT_COLORS))  # palette index per slot
+    colors_on: list[bool] = field(default_factory=lambda: [True] * COLOR_SLOTS)  # slot used by effects
     duration: float | None = None  # None = hold
     fade: protocol.Fade = protocol.Fade.NONE
     last_seen: float | None = None  # monotonic time of the last beacon
     rssi: int | None = None
     light: object | None = field(default=None, repr=False)
+
+    def active_colors(self) -> list[int]:
+        return [c for c, on in zip(self.colors, self.colors_on) if on]
 
 
 type GlowConfigEntry = ConfigEntry[GlowData]
